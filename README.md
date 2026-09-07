@@ -13,14 +13,23 @@ Cloud.
 
 ## Bahasa & tampilan
 
-Siswa bisa mengganti **bahasa** (Indonesia / English / 中文) dan **tampilan**
-(terang/gelap) lewat dua kontrol di bagian atas halaman — pilihan ini tersimpan
-selama sesi browser mereka. Semua teks antarmuka (label, pesan error, status
-kelulusan) ikut berubah bahasa; untuk menambah/mengubah teks lihat
-[`lib/i18n.py`](lib/i18n.py) (satu dict per bahasa, key harus sama persis di
-ketiganya). Kolom **Catatan** yang Anda isi sendiri di Google Sheets **tidak**
-ikut diterjemahkan otomatis — akan tampil apa adanya dalam bahasa yang Anda
-ketik.
+Siswa bisa mengganti **bahasa** (Indonesia / English / 中文) lewat kontrol di
+atas halaman — pilihan ini tersimpan selama sesi browser mereka. Semua teks
+antarmuka (label, pesan error, status kelulusan) ikut berubah bahasa; untuk
+menambah/mengubah teks lihat [`lib/i18n.py`](lib/i18n.py) (satu dict per
+bahasa, key harus sama persis di ketiganya). Kolom **Catatan** yang Anda isi
+sendiri di Google Sheets **tidak** ikut diterjemahkan otomatis — akan tampil
+apa adanya dalam bahasa yang Anda ketik.
+
+Tampilannya sendiri **tetap** (tidak ada toggle terang/gelap) — gradasi navy
+gelap dengan kartu putih membulat di tengah, terinspirasi halaman login APIIS
+Volunteer App. Warna, radius, dan font diatur di [`.streamlit/config.toml`](.streamlit/config.toml)
+(`primaryColor`, `borderColor`, `baseRadius`, `font`); gradasi latar, dua
+lingkaran cahaya di pojok, dan kartu putihnya ada di
+[`lib/branding.py`](lib/branding.py). Kalau Anda ubah `lib/branding.py` saat
+menjalankan lokal dan perubahannya tidak muncul setelah refresh, **restart**
+`streamlit run` (bukan cuma reload browser) — Python meng-cache modul yang
+sudah di-import.
 
 ## Cara kerja & privasi
 

@@ -1,2 +1,8 @@
 [theme]
-primaryColor = "#4a6fa5"
+primaryColor = "#0b77ba"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f4f6f8"
+textColor = "#1b2835"
+borderColor = "#dadfe3"
+baseRadius = "10px"
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"

@@ -18,9 +18,6 @@ _TRANSLATIONS = {
             "dan total nilai kuis minimal {kuis_min}%."
         ),
         "lang_label": "🌐 Bahasa",
-        "theme_label": "Tampilan",
-        "theme_light": "☀️ Terang",
-        "theme_dark": "🌙 Gelap",
         "no_semesters_error": "Laporan belum tersedia saat ini. Hubungi wali kelas Anda.",
         "email_label": "Email",
         "email_placeholder": "nama@email.com",
@@ -64,9 +61,6 @@ _TRANSLATIONS = {
             "attendance and at least {kuis_min}% total quiz score."
         ),
         "lang_label": "🌐 Language",
-        "theme_label": "Appearance",
-        "theme_light": "☀️ Light",
-        "theme_dark": "🌙 Dark",
         "no_semesters_error": "Reports are not available right now. Please contact your class advisor.",
         "email_label": "Email",
         "email_placeholder": "name@email.com",
@@ -107,9 +101,6 @@ _TRANSLATIONS = {
             "测验总分至少 {kuis_min}%。"
         ),
         "lang_label": "🌐 语言",
-        "theme_label": "外观",
-        "theme_light": "☀️ 浅色",
-        "theme_dark": "🌙 深色",
         "no_semesters_error": "目前暂无成绩单，请联系班主任。",
         "email_label": "电子邮箱",
         "email_placeholder": "name@email.com",
