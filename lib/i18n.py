@@ -8,7 +8,7 @@ LANGUAGES = {
 
 _TRANSLATIONS = {
     "id": {
-        "app_title": "Laporan semester MMin",
+        "app_title": "Laporan Semester MMin",
         "intro_caption": (
             "Masukkan email, kelas, dan nomor HP yang terdaftar saat pendaftaran "
             "program untuk melihat nilai dan kehadiran Anda."
