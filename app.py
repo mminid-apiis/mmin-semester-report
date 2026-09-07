@@ -58,8 +58,8 @@ def parse_percentage(value) -> float | None:
 
 with st.container(key="hero"):
     st.image("assets/logo_apiis.png")
-    st.title(t("app_title"))
     st.caption(ORG_TAGLINE)
+    st.title(t("app_title"))
 
 with st.container(key="card"):
     lang_codes = list(LANGUAGES.keys())
