@@ -84,7 +84,7 @@ Anda (guru) mengisi/update nilai **langsung di Google Sheets** seperti biasa
   [`data/dummy_semester_2_leadership.csv`](data/dummy_semester_2_leadership.csv)
   (3 baris, untuk tab `Semester 2 Leadership`) dan
   [`data/dummy_semester_2_pastoral.csv`](data/dummy_semester_2_pastoral.csv)
-  (2 baris, untuk tab `Semester 2 Pastoral`).
+  (5 baris, untuk tab `Semester 2 Pastoral`).
 
 ### Status kelulusan dihitung otomatis
 
@@ -208,6 +208,14 @@ streamlit run app.py
      kehadiran 90% sudah memenuhi syarat.
    - `testempat@example.com` / `MMin 2 Pastoral` / `081234500004` → "Test
      Empat", status **belum memenuhi syarat** pada kedua kriteria sekaligus.
+   - `testenam@example.com` / `MMin 2 Pastoral` / `081234500006` → "Test Enam",
+     status **memenuhi syarat kelulusan** (kuis 85%, kehadiran 92%).
+   - `testtujuh@example.com` / `MMin 2 Pastoral` / `081234500007` → "Test
+     Tujuh", status **belum memenuhi syarat** karena kehadiran 65% (di bawah
+     75%) meski kuis 78% sudah memenuhi syarat.
+   - `testdelapan@example.com` / `MMin 2 Pastoral` / `+62 812-3450-0008` →
+     "Test Delapan" (menguji normalisasi nomor HP format `+62` di tab
+     Pastoral), status **memenuhi syarat**.
    - `TestLima@Example.com` (huruf besar/kecil dicampur) / `MMin 2 Leadership` /
      `+62 812-3450-0005` → tetap cocok dengan "Test Lima" (menguji normalisasi
      email dan nomor HP format `+62` sekaligus), status **memenuhi syarat**.
