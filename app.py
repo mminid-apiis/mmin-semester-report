@@ -14,7 +14,6 @@ KELAS_OPTIONS = ["MMin 2 Leadership", "MMin 2 Pastoral"]
 KEHADIRAN_MIN = 75
 KUIS_MIN = 70
 
-FIELD_EMAIL = "email"
 FIELD_NAMA = "nama"
 FIELD_KUIS = "total persentase kuis"
 FIELD_KEHADIRAN = "total persentase kehadiran"
@@ -54,8 +53,8 @@ def parse_percentage(value) -> float | None:
 
 st.title("Laporan semester MMin", icon=":material/school:")
 st.caption(
-    "Masukkan kelas dan nomor HP yang terdaftar saat pendaftaran program untuk melihat "
-    "nilai dan kehadiran Anda."
+    "Masukkan email, kelas, dan nomor HP yang terdaftar saat pendaftaran program untuk "
+    "melihat nilai dan kehadiran Anda."
 )
 st.caption(
     f"Syarat kelulusan semester: kehadiran Kelas Zoom minimal {KEHADIRAN_MIN}% dan "
@@ -68,8 +67,11 @@ if not semesters:
     st.error("Laporan belum tersedia saat ini. Hubungi wali kelas Anda.")
     st.stop()
 
+# Semester tidak dipilih siswa — otomatis pakai tab paling baru di spreadsheet.
+semester = semesters[-1]
+
 with st.form("lookup_form", border=True):
-    semester = st.selectbox("Semester", options=semesters, index=len(semesters) - 1)
+    email = st.text_input("Email", placeholder="nama@email.com")
     kelas = st.selectbox(
         "Kelas", options=KELAS_OPTIONS, index=None, placeholder="Pilih kelas Anda"
     )
@@ -77,15 +79,20 @@ with st.form("lookup_form", border=True):
     submitted = st.form_submit_button("Lihat laporan", icon=":material/search:")
 
 if submitted:
-    if not kelas or not phone.strip():
-        st.warning("Lengkapi kelas dan nomor HP terlebih dahulu.")
+    if not email.strip() or not kelas or not phone.strip():
+        st.warning("Lengkapi email, kelas, dan nomor HP terlebih dahulu.")
         st.stop()
 
     with st.spinner("Mencari data..."):
         try:
             result = call_apps_script(
                 "get_report",
-                {"kelas": kelas, "phone": phone.strip(), "semester": semester},
+                {
+                    "email": email.strip(),
+                    "kelas": kelas,
+                    "phone": phone.strip(),
+                    "semester": semester,
+                },
             )
         except AppsScriptError as exc:
             st.error(str(exc))
@@ -93,21 +100,18 @@ if submitted:
 
     if not result.get("ok"):
         st.error(
-            "Data tidak ditemukan. Pastikan kelas dan nomor HP sesuai dengan data "
+            "Data tidak ditemukan. Pastikan email, kelas, dan nomor HP sesuai dengan data "
             "pendaftaran Anda."
         )
         st.stop()
 
     data = normalize_fields(result.get("data", {}))
     nama = data.get(FIELD_NAMA, "-")
-    email = data.get(FIELD_EMAIL)
     kuis = parse_percentage(data.get(FIELD_KUIS))
     kehadiran = parse_percentage(data.get(FIELD_KEHADIRAN))
     catatan = data.get(FIELD_CATATAN)
 
     st.success(f"Ditemukan laporan untuk **{nama}** — {kelas}, {semester}")
-    if email:
-        st.caption(f"Terdaftar dengan email {email}")
 
     col1, col2 = st.columns(2)
     col1.metric("Total persentase kuis", f"{kuis:.0f}%" if kuis is not None else "-")

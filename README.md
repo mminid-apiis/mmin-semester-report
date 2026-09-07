@@ -12,36 +12,47 @@ Community Cloud.
 
 ## Cara kerja & privasi
 
-1. Siswa memilih **Kelas** ("MMin 2 Leadership" / "MMin 2 Pastoral") dan mengetik
-   **Nomor HP** yang sama seperti saat pendaftaran.
-2. Streamlit mengirim kelas + nomor HP ke Apps Script (lewat POST + `SHARED_SECRET`).
-3. Apps Script mencari baris yang cocok **persis** pada kombinasi Kelas + Nomor HP
-   (nomor HP dinormalisasi ke format `08xxxxxxxxxx` dulu di kedua sisi), lalu
-   **hanya mengembalikan satu baris itu**. Seluruh isi spreadsheet tidak pernah
-   dikirim ke frontend.
-4. Kalau tidak cocok, pesannya generik ("Data tidak ditemukan") — tidak
-   diberitahu apakah kelas atau nomor HP yang salah, supaya tidak membantu orang
-   menebak-nebak data siswa lain.
+1. Siswa mengisi **Email**, memilih **Kelas** ("MMin 2 Leadership" / "MMin 2
+   Pastoral"), dan mengetik **Nomor HP** — ketiganya harus sama seperti saat
+   pendaftaran. Semester tidak dipilih siswa; aplikasi otomatis memakai tab
+   paling baru di spreadsheet.
+2. Streamlit mengirim email + kelas + nomor HP ke Apps Script (lewat POST +
+   `SHARED_SECRET`).
+3. Apps Script mencari baris yang cocok **persis** pada kombinasi Email + Kelas
+   + Nomor HP (email dibandingkan tanpa memandang huruf besar/kecil, nomor HP
+   dinormalisasi ke format `08xxxxxxxxxx` dulu di kedua sisi), lalu **hanya
+   mengembalikan satu baris itu**. Seluruh isi spreadsheet tidak pernah dikirim
+   ke frontend.
+4. Kalau salah satu saja tidak cocok, pesannya generik ("Data tidak
+   ditemukan") — tidak diberitahu bagian mana yang salah, supaya tidak
+   membantu orang menebak-nebak data siswa lain.
 
 Anda (guru) mengisi/update nilai **langsung di Google Sheets** seperti biasa
 (copy-paste/import CSV) — tidak ada form input di aplikasi ini.
 
 ## Struktur data di Google Sheets
 
-- Satu **tab per semester**, misalnya `Semester 2 2026`. Nama tab inilah yang
-  muncul sebagai pilihan "Semester" di aplikasi (tab yang namanya diawali `_`
-  disembunyikan dari daftar — berguna untuk tab catatan/kerja internal Anda).
+- Satu **tab per semester**, misalnya `Semester 2 2026`. Tab yang namanya
+  diawali `_` disembunyikan dari daftar (berguna untuk tab catatan/kerja
+  internal Anda). Siswa **tidak memilih semester** — aplikasi otomatis memakai
+  tab paling baru (urutan tab paling kanan/terakhir di spreadsheet). Kalau Anda
+  buat tab semester baru, pindahkan tabnya ke urutan paling kanan supaya
+  otomatis jadi yang aktif.
 - Baris pertama = header, kolomnya tetap (nama kolom tidak case-sensitive):
 
   | Kolom | Keterangan |
   |---|---|
-  | `Email` | ditampilkan sebagai info tambahan di laporan (bukan bagian dari pencarian/login) |
+  | `Email` | dipakai untuk pencocokan akses siswa — wajib |
   | `Nomor HP` | dipakai untuk pencocokan akses siswa — wajib |
-  | `Nama` | dipakai untuk pencocokan akses siswa — wajib, judul laporan |
   | `Kelas` | dipakai untuk pencocokan akses siswa — wajib |
+  | `Nama` | judul laporan |
   | `Total Persentase Kuis` | angka 0-100 (boleh diisi mis. `82` atau `82%`) |
   | `Total Persentase Kehadiran` | angka 0-100, persentase kehadiran Kelas Zoom |
   | `Catatan` | teks bebas dari wali kelas, opsional — boleh dikosongkan |
+
+  Siswa harus memasukkan **Email + Kelas + Nomor HP** yang cocok persis dengan
+  satu baris (email dicocokkan tanpa memandang huruf besar/kecil) untuk bisa
+  melihat laporannya.
 
 - Contoh 5 baris dummy untuk uji coba: [`data/dummy_semester_2_2026.csv`](data/dummy_semester_2_2026.csv).
 
@@ -147,36 +158,41 @@ streamlit run app.py
 
 ## Uji coba dengan 5 data dummy
 
-1. Pastikan tab `Semester 2 2026` sudah berisi 5 baris dari
-   [`data/dummy_semester_2_2026.csv`](data/dummy_semester_2_2026.csv).
-2. Jalankan `streamlit run app.py`, pilih semester "Semester 2 2026".
-3. Coba kombinasi berikut untuk memverifikasi alur:
-   - Kelas `MMin 2 Leadership` + HP `081234500001` → laporan "Test Satu" muncul,
-     status **memenuhi syarat kelulusan** (kuis 88%, kehadiran 95%).
-   - Kelas `MMin 2 Leadership` + HP `08123 4500 002` (dengan spasi) → tetap
-     cocok dengan "Test Dua" (menguji normalisasi spasi), status **belum
-     memenuhi syarat** karena kehadiran 68% (di bawah 75%) meski kuis 82% sudah
-     memenuhi syarat.
-   - Kelas `MMin 2 Pastoral` + HP `081234500003` → "Test Tiga", status **belum
-     memenuhi syarat** karena kuis 65% (di bawah 70%) meski kehadiran 90% sudah
-     memenuhi syarat.
-   - Kelas `MMin 2 Pastoral` + HP `081234500004` → "Test Empat", status **belum
-     memenuhi syarat** pada kedua kriteria sekaligus.
-   - Kelas `MMin 2 Leadership` + HP `+62 812-3450-0005` → cocok dengan "Test
-     Lima" (data di sheet sengaja disimpan dalam format `+62`, menguji
-     normalisasi dari kedua sisi), status **memenuhi syarat**.
-   - Kelas `MMin 2 Pastoral` + HP `081234500001` (kelas salah) → harus muncul
-     pesan generik "Data tidak ditemukan", bukan pesan spesifik.
+1. Pastikan tab semester paling kanan di spreadsheet Anda sudah berisi 5 baris
+   dari [`data/dummy_semester_2_2026.csv`](data/dummy_semester_2_2026.csv).
+2. Jalankan `streamlit run app.py`.
+3. Coba kombinasi berikut untuk memverifikasi alur (semua pakai Email + Kelas +
+   Nomor HP):
+   - `testsatu@example.com` / `MMin 2 Leadership` / `081234500001` → laporan
+     "Test Satu" muncul, status **memenuhi syarat kelulusan** (kuis 88%,
+     kehadiran 95%).
+   - `testdua@example.com` / `MMin 2 Leadership` / `08123 4500 002` (nomor HP
+     dengan spasi) → tetap cocok dengan "Test Dua" (menguji normalisasi spasi),
+     status **belum memenuhi syarat** karena kehadiran 68% (di bawah 75%)
+     meski kuis 82% sudah memenuhi syarat.
+   - `testtiga@example.com` / `MMin 2 Pastoral` / `081234500003` → "Test Tiga",
+     status **belum memenuhi syarat** karena kuis 65% (di bawah 70%) meski
+     kehadiran 90% sudah memenuhi syarat.
+   - `testempat@example.com` / `MMin 2 Pastoral` / `081234500004` → "Test
+     Empat", status **belum memenuhi syarat** pada kedua kriteria sekaligus.
+   - `TestLima@Example.com` (huruf besar/kecil dicampur) / `MMin 2 Leadership` /
+     `+62 812-3450-0005` → tetap cocok dengan "Test Lima" (menguji normalisasi
+     email dan nomor HP format `+62` sekaligus), status **memenuhi syarat**.
+   - `testsatu@example.com` / `MMin 2 Pastoral` (kelas salah, email & HP dari
+     Test Satu) → harus muncul pesan generik "Data tidak ditemukan", bukan
+     pesan spesifik.
 4. Setelah semua kombinasi di atas berhasil, ganti isi tab dengan data 240 siswa
-   yang sebenarnya (bisa buat tab baru untuk semester berikutnya, tab lama tetap
-   ada sebagai arsip).
+   yang sebenarnya (bisa buat tab baru untuk semester berikutnya di ujung
+   kanan, tab lama tetap ada sebagai arsip).
 
 ## Menambah semester baru
 
 Cukup buat tab baru di spreadsheet yang sama dengan nama bebas (mis.
-`Semester 1 2027`), isi header + data seperti biasa. Tab baru otomatis muncul
-sebagai pilihan semester di aplikasi (bisa butuh sampai 5 menit karena daftar
-semester di-cache) — tidak perlu ubah kode maupun deploy ulang Apps Script.
+`Semester 1 2027`), isi header + data seperti biasa, lalu pindahkan tabnya ke
+urutan **paling kanan** (klik kanan tab → Move right, atau drag). Aplikasi
+otomatis memakai tab paling kanan sebagai semester aktif (bisa butuh sampai 5
+menit karena daftar tab di-cache) — tidak perlu ubah kode maupun deploy ulang
+Apps Script.
 
 ## Deploy ke Streamlit Community Cloud (gratis, tanpa kartu kredit)
 

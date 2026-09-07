@@ -18,6 +18,7 @@ var SHARED_SECRET = 'GANTI_DENGAN_SHARED_SECRET';
 // Kolom wajib ada di baris pertama setiap tab semester (tidak case-sensitive).
 var COLUMN_KELAS = 'kelas';
 var COLUMN_PHONE = 'nomor hp';
+var COLUMN_EMAIL = 'email';
 
 function doGet(e) {
   return jsonResponse({ ok: true, message: 'MMin Semester Report backend is running.' });
@@ -41,7 +42,7 @@ function doPost(e) {
       case 'list_semesters':
         return jsonResponse(listSemesters());
       case 'get_report':
-        return jsonResponse(getReport(body.kelas, body.phone, body.semester));
+        return jsonResponse(getReport(body.kelas, body.phone, body.email, body.semester));
       default:
         return jsonResponse({ ok: false, message: 'Action tidak dikenal.' });
     }
@@ -68,8 +69,8 @@ function listSemesters() {
   return { ok: true, semesters: names };
 }
 
-function getReport(kelas, phone, semesterName) {
-  if (!kelas || !phone || !semesterName) {
+function getReport(kelas, phone, email, semesterName) {
+  if (!kelas || !phone || !email || !semesterName) {
     return { ok: false, message: 'Data tidak ditemukan.' };
   }
 
@@ -87,21 +88,30 @@ function getReport(kelas, phone, semesterName) {
   var headers = values[0].map(function (h) { return String(h).trim(); });
   var kelasIdx = findColumn(headers, COLUMN_KELAS);
   var phoneIdx = findColumn(headers, COLUMN_PHONE);
+  var emailIdx = findColumn(headers, COLUMN_EMAIL);
 
-  if (kelasIdx === -1 || phoneIdx === -1) {
-    console.error('Sheet "' + semesterName + '" tidak punya kolom "Kelas" atau "Nomor HP".');
+  if (kelasIdx === -1 || phoneIdx === -1 || emailIdx === -1) {
+    console.error('Sheet "' + semesterName + '" tidak punya kolom "Kelas", "Nomor HP", atau "Email".');
     return { ok: false, message: 'Data tidak ditemukan.' };
   }
 
   var targetKelas = String(kelas).trim().toLowerCase();
   var targetPhone = normalizePhone(phone);
+  var targetEmail = String(email).trim().toLowerCase();
 
   for (var r = 1; r < values.length; r++) {
     var row = values[r];
     var rowKelas = String(row[kelasIdx]).trim().toLowerCase();
     var rowPhone = normalizePhone(row[phoneIdx]);
+    var rowEmail = String(row[emailIdx]).trim().toLowerCase();
 
-    if (rowKelas === targetKelas && rowPhone === targetPhone && rowPhone !== '') {
+    if (
+      rowKelas === targetKelas &&
+      rowPhone === targetPhone &&
+      rowPhone !== '' &&
+      rowEmail === targetEmail &&
+      rowEmail !== ''
+    ) {
       var data = {};
       for (var c = 0; c < headers.length; c++) {
         if (!headers[c]) continue;
