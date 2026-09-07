@@ -47,6 +47,12 @@ _BRAND_CSS = """
     color: #ffffff !important;
     text-align: center;
 }
+.st-key-hero img {
+    display: block;
+    margin: 0 auto;
+    max-width: 140px;
+    height: auto;
+}
 
 .st-key-card {
     position: relative;

@@ -23,12 +23,19 @@ apa adanya dalam bahasa yang Anda ketik.
 
 Tampilannya sendiri **tetap** (tidak ada toggle terang/gelap) — gradasi navy
 gelap dengan kartu putih membulat di tengah, terinspirasi halaman login APIIS
-Volunteer App. Warna, radius, dan font diatur di [`.streamlit/config.toml`](.streamlit/config.toml)
-(`primaryColor`, `borderColor`, `baseRadius`, `font`); gradasi latar, dua
-lingkaran cahaya di pojok, dan kartu putihnya ada di
-[`lib/branding.py`](lib/branding.py). Kalau Anda ubah `lib/branding.py` saat
-menjalankan lokal dan perubahannya tidak muncul setelah refresh, **restart**
-`streamlit run` (bukan cuma reload browser) — Python meng-cache modul yang
+Volunteer App. Logo APIIS ([`assets/logo_apiis.png`](assets/logo_apiis.png))
+dan motto "21st Century Training. For Christians. For Free" tampil di atas
+kartu (motto sengaja tidak diterjemahkan — ini teks resmi organisasi, sama di
+ketiga bahasa) dan juga dipakai sebagai favicon tab browser. Untuk ganti logo,
+timpa file itu dengan nama yang sama, atau ubah path-nya di `app.py`
+(`st.image(...)` di dalam `st.container(key="hero")` dan `page_icon=...` di
+`st.set_page_config`). Warna, radius, dan font diatur di
+[`.streamlit/config.toml`](.streamlit/config.toml) (`primaryColor`,
+`borderColor`, `baseRadius`, `font`); gradasi latar, dua lingkaran cahaya di
+pojok, dan kartu putihnya ada di [`lib/branding.py`](lib/branding.py). Kalau
+Anda ubah `lib/branding.py` saat menjalankan lokal dan perubahannya tidak
+muncul setelah refresh, **restart** `streamlit run` (bukan cuma reload
+browser) — Python meng-cache modul yang
 sudah di-import.
 
 ## Cara kerja & privasi

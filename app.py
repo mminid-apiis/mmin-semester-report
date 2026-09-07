@@ -6,10 +6,12 @@ from lib.i18n import LANGUAGES, get_lang, t
 
 st.set_page_config(
     page_title="MMin Semester Report",
-    page_icon=":material/school:",
+    page_icon="assets/logo_apiis.png",
     layout="centered",
 )
 apply_branding()
+
+ORG_TAGLINE = "21st Century Training. For Christians. For Free"
 
 KELAS_OPTIONS = ["MMin 2 Leadership", "MMin 2 Pastoral"]
 
@@ -55,7 +57,9 @@ def parse_percentage(value) -> float | None:
 
 
 with st.container(key="hero"):
-    st.title(t("app_title"), icon=":material/school:")
+    st.image("assets/logo_apiis.png")
+    st.title(t("app_title"))
+    st.caption(ORG_TAGLINE)
 
 with st.container(key="card"):
     lang_codes = list(LANGUAGES.keys())
