@@ -84,9 +84,6 @@ if not semesters:
     st.error(t("no_semesters_error"))
     st.stop()
 
-# Semester tidak dipilih siswa — otomatis pakai tab paling baru di spreadsheet.
-semester = semesters[-1]
-
 with st.form("lookup_form", border=True):
     email = st.text_input(t("email_label"), placeholder=t("email_placeholder"))
     kelas = st.selectbox(
@@ -108,7 +105,6 @@ if submitted:
                     "email": email.strip(),
                     "kelas": kelas,
                     "phone": phone.strip(),
-                    "semester": semester,
                 },
             )
         except AppsScriptError as exc:
@@ -119,6 +115,7 @@ if submitted:
         st.error(t("error_not_found"))
         st.stop()
 
+    semester = result.get("semester", "")
     data = normalize_fields(result.get("data", {}))
     nama = data.get(FIELD_NAMA, "-")
     kuis = parse_percentage(data.get(FIELD_KUIS))

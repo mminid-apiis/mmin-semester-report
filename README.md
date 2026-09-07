@@ -6,9 +6,10 @@ per satu lewat Gmail.
 
 Backend dibuat dengan **Google Apps Script** (bukan Google Cloud Console/OAuth) —
 gratis penuh, **tidak perlu kartu kredit**. Semua data nilai & kehadiran disimpan
-langsung di **Google Sheets** (satu tab per semester). Aplikasi ini sendiri tidak
-punya database lokal maupun upload file, jadi aman dijalankan di Streamlit
-Community Cloud.
+langsung di **Google Sheets** (satu tab per kelas per periode, mis. "Semester 2
+Leadership" dan "Semester 2 Pastoral"). Aplikasi ini sendiri tidak punya
+database lokal maupun upload file, jadi aman dijalankan di Streamlit Community
+Cloud.
 
 ## Bahasa & tampilan
 
@@ -25,47 +26,65 @@ ketik.
 
 1. Siswa mengisi **Email**, memilih **Kelas** ("MMin 2 Leadership" / "MMin 2
    Pastoral"), dan mengetik **Nomor HP** — ketiganya harus sama seperti saat
-   pendaftaran. Semester tidak dipilih siswa; aplikasi otomatis memakai tab
-   paling baru di spreadsheet.
+   pendaftaran. Semester tidak dipilih siswa.
 2. Streamlit mengirim email + kelas + nomor HP ke Apps Script (lewat POST +
    `SHARED_SECRET`).
-3. Apps Script mencari baris yang cocok **persis** pada kombinasi Email + Kelas
-   + Nomor HP (email dibandingkan tanpa memandang huruf besar/kecil, nomor HP
-   dinormalisasi ke format `08xxxxxxxxxx` dulu di kedua sisi), lalu **hanya
-   mengembalikan satu baris itu**. Seluruh isi spreadsheet tidak pernah dikirim
-   ke frontend.
-4. Kalau salah satu saja tidak cocok, pesannya generik ("Data tidak
-   ditemukan") — tidak diberitahu bagian mana yang salah, supaya tidak
-   membantu orang menebak-nebak data siswa lain.
+3. Apps Script **memilih tab berdasarkan Kelas yang dipilih** (lihat "Struktur
+   data" di bawah), lalu mencari baris di tab itu yang cocok **persis** pada
+   kombinasi Email + Nomor HP (email dibandingkan tanpa memandang huruf
+   besar/kecil, nomor HP dinormalisasi ke format `08xxxxxxxxxx` dulu di kedua
+   sisi). Hanya **satu baris itu** yang dikembalikan — seluruh isi spreadsheet
+   tidak pernah dikirim ke frontend.
+4. Kalau salah satu saja tidak cocok (termasuk kalau siswa asal pilih Kelas
+   yang salah, sehingga Apps Script membuka tab yang salah), pesannya generik
+   ("Data tidak ditemukan") — tidak diberitahu bagian mana yang salah, supaya
+   tidak membantu orang menebak-nebak data siswa lain.
 
 Anda (guru) mengisi/update nilai **langsung di Google Sheets** seperti biasa
 (copy-paste/import CSV) — tidak ada form input di aplikasi ini.
 
 ## Struktur data di Google Sheets
 
-- Satu **tab per semester**, misalnya `Semester 2 2026`. Tab yang namanya
-  diawali `_` disembunyikan dari daftar (berguna untuk tab catatan/kerja
-  internal Anda). Siswa **tidak memilih semester** — aplikasi otomatis memakai
-  tab paling baru (urutan tab paling kanan/terakhir di spreadsheet). Kalau Anda
-  buat tab semester baru, pindahkan tabnya ke urutan paling kanan supaya
-  otomatis jadi yang aktif.
-- Baris pertama = header, kolomnya tetap (nama kolom tidak case-sensitive):
+- **Satu tab per kelas per periode** — bukan satu tab untuk kedua kelas. Nama
+  tab bebas, asalkan **kata terakhirnya sama dengan kata terakhir pada nilai
+  Kelas**:
+  - Kelas `MMin 2 Leadership` → nama tab harus mengandung kata **Leadership**
+    di akhir, mis. `Semester 2 Leadership`.
+  - Kelas `MMin 2 Pastoral` → nama tab harus mengandung kata **Pastoral** di
+    akhir, mis. `Semester 2 Pastoral`.
+
+  Apps Script mencari tab berdasarkan Kelas yang dipilih siswa (pencocokan kata
+  kunci ini tidak case-sensitive). Tab yang namanya diawali `_` disembunyikan/
+  diabaikan (berguna untuk tab catatan/kerja internal Anda).
+
+- **Semester tidak dipilih siswa** — kalau ada beberapa tab yang cocok untuk
+  kelas yang sama (semester lama masih disimpan sebagai arsip, lihat "Menambah
+  semester baru" di bawah), yang otomatis dipakai adalah tab **paling kanan**
+  di antara tab-tab untuk kelas itu.
+
+- Baris pertama tiap tab = header, kolomnya tetap (nama kolom tidak
+  case-sensitive):
 
   | Kolom | Keterangan |
   |---|---|
   | `Email` | dipakai untuk pencocokan akses siswa — wajib |
   | `Nomor HP` | dipakai untuk pencocokan akses siswa — wajib |
-  | `Kelas` | dipakai untuk pencocokan akses siswa — wajib |
   | `Nama` | judul laporan |
+  | `Kelas` | opsional — kalau ada, tetap dicek cocok sebagai lapis keamanan tambahan (jaga-jaga ada baris yang salah tempel tab) |
   | `Total Persentase Kuis` | angka 0-100 (boleh diisi mis. `82` atau `82%`) |
   | `Total Persentase Kehadiran` | angka 0-100, persentase kehadiran Kelas Zoom |
   | `Catatan` | teks bebas dari wali kelas, opsional — boleh dikosongkan |
 
-  Siswa harus memasukkan **Email + Kelas + Nomor HP** yang cocok persis dengan
-  satu baris (email dicocokkan tanpa memandang huruf besar/kecil) untuk bisa
-  melihat laporannya.
+  Siswa harus memasukkan **Kelas yang tepat** (supaya tab yang benar terbuka)
+  ditambah **Email + Nomor HP** yang cocok persis dengan satu baris di tab itu
+  (email dicocokkan tanpa memandang huruf besar/kecil) untuk bisa melihat
+  laporannya.
 
-- Contoh 5 baris dummy untuk uji coba: [`data/dummy_semester_2_2026.csv`](data/dummy_semester_2_2026.csv).
+- Contoh data dummy untuk uji coba (isi masing-masing ke tab kelasnya):
+  [`data/dummy_semester_2_leadership.csv`](data/dummy_semester_2_leadership.csv)
+  (3 baris, untuk tab `Semester 2 Leadership`) dan
+  [`data/dummy_semester_2_pastoral.csv`](data/dummy_semester_2_pastoral.csv)
+  (2 baris, untuk tab `Semester 2 Pastoral`).
 
 ### Status kelulusan dihitung otomatis
 
@@ -104,10 +123,12 @@ tagihan. Cukup akun Google biasa.
 
 1. Buat Google Spreadsheet baru, ganti nama sesuai keinginan (mis. "MMin
    Semester Report — Data").
-2. Buat tab pertama dengan nama **`Semester 2 2026`**, lalu isi baris pertama
-   dengan header dari [`data/dummy_semester_2_2026.csv`](data/dummy_semester_2_2026.csv)
-   dan paste 5 baris dummy-nya untuk uji coba (ingat: format kolom Nomor HP
-   sebagai Plain text dulu sebelum paste).
+2. Buat **dua tab**: `Semester 2 Leadership` dan `Semester 2 Pastoral`. Isi
+   baris pertama tiap tab dengan header dari file dummy yang sesuai
+   ([`data/dummy_semester_2_leadership.csv`](data/dummy_semester_2_leadership.csv)
+   dan [`data/dummy_semester_2_pastoral.csv`](data/dummy_semester_2_pastoral.csv))
+   lalu paste data dummy-nya masing-masing untuk uji coba (ingat: format kolom
+   Nomor HP sebagai Plain text dulu sebelum paste).
 3. Salin **ID spreadsheet** dari URL:
    `https://docs.google.com/spreadsheets/d/`**`ID_SPREADSHEET_INI`**`/edit` —
    hanya bagian ID-nya, bukan URL lengkap.
@@ -167,10 +188,11 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-## Uji coba dengan 5 data dummy
+## Uji coba dengan data dummy
 
-1. Pastikan tab semester paling kanan di spreadsheet Anda sudah berisi 5 baris
-   dari [`data/dummy_semester_2_2026.csv`](data/dummy_semester_2_2026.csv).
+1. Pastikan tab `Semester 2 Leadership` dan `Semester 2 Pastoral` di
+   spreadsheet Anda sudah berisi data dari kedua file dummy (lihat "Struktur
+   data" di atas).
 2. Jalankan `streamlit run app.py`.
 3. Coba kombinasi berikut untuk memverifikasi alur (semua pakai Email + Kelas +
    Nomor HP):
@@ -189,21 +211,24 @@ streamlit run app.py
    - `TestLima@Example.com` (huruf besar/kecil dicampur) / `MMin 2 Leadership` /
      `+62 812-3450-0005` → tetap cocok dengan "Test Lima" (menguji normalisasi
      email dan nomor HP format `+62` sekaligus), status **memenuhi syarat**.
-   - `testsatu@example.com` / `MMin 2 Pastoral` (kelas salah, email & HP dari
-     Test Satu) → harus muncul pesan generik "Data tidak ditemukan", bukan
-     pesan spesifik.
-4. Setelah semua kombinasi di atas berhasil, ganti isi tab dengan data 240 siswa
-   yang sebenarnya (bisa buat tab baru untuk semester berikutnya di ujung
-   kanan, tab lama tetap ada sebagai arsip).
+   - `testsatu@example.com` / `MMin 2 Pastoral` (Kelas salah — data Test Satu
+     sebenarnya ada di tab Leadership, jadi Apps Script membuka tab Pastoral
+     yang tidak punya barisnya) → harus muncul pesan generik "Data tidak
+     ditemukan", bukan pesan spesifik.
+4. Setelah semua kombinasi di atas berhasil, ganti isi kedua tab dengan data
+   120 siswa asli masing-masing (satu baris per siswa, di tab kelasnya).
 
 ## Menambah semester baru
 
-Cukup buat tab baru di spreadsheet yang sama dengan nama bebas (mis.
-`Semester 1 2027`), isi header + data seperti biasa, lalu pindahkan tabnya ke
-urutan **paling kanan** (klik kanan tab → Move right, atau drag). Aplikasi
-otomatis memakai tab paling kanan sebagai semester aktif (bisa butuh sampai 5
-menit karena daftar tab di-cache) — tidak perlu ubah kode maupun deploy ulang
-Apps Script.
+Buat **dua tab baru** (satu per kelas) dengan nama bebas asalkan kata
+terakhirnya tetap `Leadership`/`Pastoral`, mis. `Semester 1 2027 Leadership`
+dan `Semester 1 2027 Pastoral`, isi header + data seperti biasa, lalu
+pindahkan keduanya ke urutan **paling kanan** (klik kanan tab → Move right,
+atau drag) — asal lebih ke kanan dari tab lama untuk kelas yang sama, urutan
+relatif antara tab Leadership dan Pastoral sendiri tidak masalah. Tab lama
+tetap ada sebagai arsip dan tidak akan terpakai lagi (bisa butuh sampai 5 menit
+untuk efeknya terlihat karena hasil `list_semesters` di-cache) — tidak perlu
+ubah kode maupun deploy ulang Apps Script.
 
 ## Checklist sebelum deploy
 
@@ -215,10 +240,11 @@ Apps Script.
       dua siswa dengan Email+Kelas+Nomor HP identik, hanya baris pertama yang
       pernah cocok yang akan ketemu — cek dengan fitur "Highlight duplicates"
       Google Sheets atau filter manual).
-- [ ] Kolom `Kelas` di setiap baris **persis** `MMin 2 Leadership` atau
-      `MMin 2 Pastoral` (spasi/kapitalisasi ekstra pada Nomor HP & Email sudah
-      dinormalisasi otomatis, tapi Kelas dibandingkan setelah `trim()` saja —
-      hindari typo seperti "Mmin 2 leadership ").
+- [ ] Nama tab diakhiri kata `Leadership`/`Pastoral` sesuai isinya, dan data
+      120 siswa masing-masing sudah masuk ke tab kelasnya yang benar (bukan
+      tertukar). Kalau kolom `Kelas` masih dipakai di tiap baris, isinya
+      **persis** `MMin 2 Leadership` atau `MMin 2 Pastoral` — hindari typo
+      seperti "Mmin 2 leadership " dengan spasi tambahan.
 - [ ] `.streamlit/secrets.toml` **tidak** ikut ter-commit ke Git (`git status`
       setelah `git add` — pastikan tidak ada baris `secrets.toml`).
 - [ ] Repo GitHub tujuan deploy sudah **public**.

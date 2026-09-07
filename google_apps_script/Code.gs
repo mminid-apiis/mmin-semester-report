@@ -42,7 +42,7 @@ function doPost(e) {
       case 'list_semesters':
         return jsonResponse(listSemesters());
       case 'get_report':
-        return jsonResponse(getReport(body.kelas, body.phone, body.email, body.semester));
+        return jsonResponse(getReport(body.kelas, body.phone, body.email));
       default:
         return jsonResponse({ ok: false, message: 'Action tidak dikenal.' });
     }
@@ -54,8 +54,10 @@ function doPost(e) {
 }
 
 /**
- * Setiap tab pada spreadsheet = satu semester/periode.
- * Tab dengan nama diawali "_" dianggap konfigurasi/internal dan disembunyikan dari daftar.
+ * Availability check dipakai frontend untuk tahu apakah spreadsheet punya
+ * tab yang bisa dibaca sama sekali (bukan lagi daftar pilihan semester —
+ * semester tidak lagi dipilih siswa, lihat findClassSheet()).
+ * Tab dengan nama diawali "_" dianggap konfigurasi/internal dan disembunyikan.
  */
 function listSemesters() {
   var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
@@ -69,13 +71,51 @@ function listSemesters() {
   return { ok: true, semesters: names };
 }
 
-function getReport(kelas, phone, email, semesterName) {
-  if (!kelas || !phone || !email || !semesterName) {
+/**
+ * Satu tab = satu kelas untuk satu periode, mis. "Semester 2 Leadership" dan
+ * "Semester 2 Pastoral". Dicari berdasarkan kata terakhir pada nilai Kelas
+ * (mis. "MMin 2 Leadership" -> kata kunci "leadership") sebagai substring
+ * nama tab (tidak case-sensitive). Kalau ada beberapa tab yang cocok untuk
+ * kelas yang sama (semester lama masih disimpan sebagai arsip), yang dipakai
+ * adalah tab PALING KANAN (terbaru) di antara yang cocok itu.
+ */
+function findClassSheet(ss, kelas) {
+  var parts = String(kelas).trim().split(/\s+/);
+  var keyword = parts[parts.length - 1].toLowerCase();
+  if (!keyword) return null;
+
+  var sheets = ss.getSheets();
+  var match = null;
+  for (var i = 0; i < sheets.length; i++) {
+    var name = sheets[i].getName();
+    if (name.indexOf('_') === 0) continue;
+    if (name.toLowerCase().indexOf(keyword) !== -1) {
+      match = sheets[i];
+    }
+  }
+  return match;
+}
+
+/**
+ * Label semester yang ditampilkan ke siswa: nama tab dengan kata kelas di
+ * akhir dibuang, mis. "Semester 2 Leadership" -> "Semester 2".
+ */
+function displaySemesterLabel(sheetName, kelas) {
+  var parts = String(kelas).trim().split(/\s+/);
+  var keyword = parts[parts.length - 1];
+  if (!keyword) return sheetName;
+  var re = new RegExp('\\s*' + keyword + '\\s*$', 'i');
+  var label = sheetName.replace(re, '').trim();
+  return label || sheetName;
+}
+
+function getReport(kelas, phone, email) {
+  if (!kelas || !phone || !email) {
     return { ok: false, message: 'Data tidak ditemukan.' };
   }
 
   var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  var sheet = ss.getSheetByName(semesterName);
+  var sheet = findClassSheet(ss, kelas);
   if (!sheet) {
     return { ok: false, message: 'Data tidak ditemukan.' };
   }
@@ -86,12 +126,15 @@ function getReport(kelas, phone, email, semesterName) {
   }
 
   var headers = values[0].map(function (h) { return String(h).trim(); });
-  var kelasIdx = findColumn(headers, COLUMN_KELAS);
   var phoneIdx = findColumn(headers, COLUMN_PHONE);
   var emailIdx = findColumn(headers, COLUMN_EMAIL);
+  // Kolom Kelas opsional di sini: tab-nya sendiri sudah memilah per kelas,
+  // tapi kalau kolom ini ada, tetap dicek sebagai lapis keamanan tambahan
+  // (jaga-jaga ada baris yang salah tempel tab).
+  var kelasIdx = findColumn(headers, COLUMN_KELAS);
 
-  if (kelasIdx === -1 || phoneIdx === -1 || emailIdx === -1) {
-    console.error('Sheet "' + semesterName + '" tidak punya kolom "Kelas", "Nomor HP", atau "Email".');
+  if (phoneIdx === -1 || emailIdx === -1) {
+    console.error('Sheet "' + sheet.getName() + '" tidak punya kolom "Nomor HP" atau "Email".');
     return { ok: false, message: 'Data tidak ditemukan.' };
   }
 
@@ -101,23 +144,20 @@ function getReport(kelas, phone, email, semesterName) {
 
   for (var r = 1; r < values.length; r++) {
     var row = values[r];
-    var rowKelas = String(row[kelasIdx]).trim().toLowerCase();
     var rowPhone = normalizePhone(row[phoneIdx]);
     var rowEmail = String(row[emailIdx]).trim().toLowerCase();
+    var kelasOk = true;
+    if (kelasIdx !== -1) {
+      kelasOk = String(row[kelasIdx]).trim().toLowerCase() === targetKelas;
+    }
 
-    if (
-      rowKelas === targetKelas &&
-      rowPhone === targetPhone &&
-      rowPhone !== '' &&
-      rowEmail === targetEmail &&
-      rowEmail !== ''
-    ) {
+    if (kelasOk && rowPhone === targetPhone && rowPhone !== '' && rowEmail === targetEmail && rowEmail !== '') {
       var data = {};
       for (var c = 0; c < headers.length; c++) {
         if (!headers[c]) continue;
         data[headers[c]] = row[c];
       }
-      return { ok: true, semester: semesterName, data: data };
+      return { ok: true, semester: displaySemesterLabel(sheet.getName(), kelas), data: data };
     }
   }
 
