@@ -10,11 +10,15 @@ st.set_page_config(
 
 KELAS_OPTIONS = ["MMin 2 Leadership", "MMin 2 Pastoral"]
 
-# Kolom-kolom ini dikenali dari nama header di Google Sheets (tidak case-sensitive)
-# untuk dikelompokkan secara khusus; sisanya ditampilkan sebagai nilai mata pelajaran.
-RESERVED_COLUMNS = {"kelas", "nomor hp", "nama"}
-ATTENDANCE_HINTS = ("kehadiran", "hadir", "presensi")
-NOTE_HINTS = ("catatan",)
+# Syarat kelulusan semester — satu-satunya tempat angka ini didefinisikan.
+KEHADIRAN_MIN = 75
+KUIS_MIN = 70
+
+FIELD_EMAIL = "email"
+FIELD_NAMA = "nama"
+FIELD_KUIS = "total persentase kuis"
+FIELD_KEHADIRAN = "total persentase kehadiran"
+FIELD_CATATAN = "catatan"
 
 
 @st.cache_data(ttl=300, show_spinner=False)
@@ -25,25 +29,37 @@ def load_semesters() -> list[str]:
     return result.get("semesters", [])
 
 
-def split_columns(data: dict) -> tuple[dict, dict, dict]:
-    nilai, kehadiran, catatan = {}, {}, {}
-    for key, value in data.items():
-        lower = key.strip().lower()
-        if lower in RESERVED_COLUMNS:
-            continue
-        if any(hint in lower for hint in ATTENDANCE_HINTS):
-            kehadiran[key] = value
-        elif any(hint in lower for hint in NOTE_HINTS):
-            catatan[key] = value
-        else:
-            nilai[key] = value
-    return nilai, kehadiran, catatan
+def normalize_fields(data: dict) -> dict:
+    """Petakan header sheet (apa adanya) ke key huruf kecil yang sudah dirapikan."""
+    return {str(key).strip().lower(): value for key, value in data.items()}
+
+
+def parse_percentage(value) -> float | None:
+    """Terima angka biasa (75), teks ("75%"), atau pecahan hasil format Percent di
+    Google Sheets (0.75) dan kembalikan semuanya dalam skala 0-100."""
+    if value is None or value == "":
+        return None
+    if isinstance(value, (int, float)):
+        num = float(value)
+    else:
+        text = str(value).strip().replace("%", "").replace(",", ".")
+        if not text:
+            return None
+        try:
+            num = float(text)
+        except ValueError:
+            return None
+    return num * 100 if 0 <= num <= 1 else num
 
 
 st.title("Laporan semester MMin", icon=":material/school:")
 st.caption(
     "Masukkan kelas dan nomor HP yang terdaftar saat pendaftaran program untuk melihat "
     "nilai dan kehadiran Anda."
+)
+st.caption(
+    f"Syarat kelulusan semester: kehadiran Kelas Zoom minimal {KEHADIRAN_MIN}% dan "
+    f"total nilai kuis minimal {KUIS_MIN}%."
 )
 
 semesters = load_semesters()
@@ -82,28 +98,49 @@ if submitted:
         )
         st.stop()
 
-    data = result.get("data", {})
-    nama = data.get("Nama", "-")
-    nilai, kehadiran, catatan = split_columns(data)
+    data = normalize_fields(result.get("data", {}))
+    nama = data.get(FIELD_NAMA, "-")
+    email = data.get(FIELD_EMAIL)
+    kuis = parse_percentage(data.get(FIELD_KUIS))
+    kehadiran = parse_percentage(data.get(FIELD_KEHADIRAN))
+    catatan = data.get(FIELD_CATATAN)
 
     st.success(f"Ditemukan laporan untuk **{nama}** — {kelas}, {semester}")
+    if email:
+        st.caption(f"Terdaftar dengan email {email}")
 
-    if nilai:
-        st.subheader("Nilai", icon=":material/grade:")
-        st.dataframe(
-            {"Mata pelajaran": list(nilai.keys()), "Nilai": list(nilai.values())},
-            hide_index=True,
-            width="stretch",
+    col1, col2 = st.columns(2)
+    col1.metric("Total persentase kuis", f"{kuis:.0f}%" if kuis is not None else "-")
+    col2.metric("Total persentase kehadiran", f"{kehadiran:.0f}%" if kehadiran is not None else "-")
+
+    st.subheader("Status kelulusan semester", icon=":material/verified:")
+    if kuis is None or kehadiran is None:
+        st.warning("Data belum lengkap untuk menentukan status kelulusan. Hubungi wali kelas Anda.")
+    else:
+        kuis_ok = kuis >= KUIS_MIN
+        kehadiran_ok = kehadiran >= KEHADIRAN_MIN
+        kehadiran_line = (
+            f"Kehadiran Zoom: {kehadiran:.0f}% (memenuhi syarat)"
+            if kehadiran_ok
+            else f"Kehadiran Zoom: {kehadiran:.0f}% (syarat minimal {KEHADIRAN_MIN}%)"
         )
-
-    if kehadiran:
-        st.subheader("Kehadiran", icon=":material/event_available:")
-        cols = st.columns(len(kehadiran))
-        for col, (label, value) in zip(cols, kehadiran.items()):
-            col.metric(label, value)
+        kuis_line = (
+            f"Total kuis: {kuis:.0f}% (memenuhi syarat)"
+            if kuis_ok
+            else f"Total kuis: {kuis:.0f}% (syarat minimal {KUIS_MIN}%)"
+        )
+        if kuis_ok and kehadiran_ok:
+            st.success(
+                f"Memenuhi syarat kelulusan {semester}", icon=":material/check_circle:"
+            )
+        else:
+            st.error(
+                f"Belum memenuhi syarat kelulusan {semester}\n\n"
+                f"- {kehadiran_line}\n"
+                f"- {kuis_line}",
+                icon=":material/cancel:",
+            )
 
     if catatan:
         st.subheader("Catatan wali kelas", icon=":material/edit_note:")
-        for label, value in catatan.items():
-            if value:
-                st.write(value)
+        st.write(catatan)

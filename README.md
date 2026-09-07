@@ -31,17 +31,41 @@ Anda (guru) mengisi/update nilai **langsung di Google Sheets** seperti biasa
 - Satu **tab per semester**, misalnya `Semester 2 2026`. Nama tab inilah yang
   muncul sebagai pilihan "Semester" di aplikasi (tab yang namanya diawali `_`
   disembunyikan dari daftar — berguna untuk tab catatan/kerja internal Anda).
-- Baris pertama = header. Wajib ada kolom **Kelas** dan **Nomor HP** (nama kolom
-  tidak case-sensitive). Kolom lain bebas sesuai kebutuhan:
-  - Kolom **Nama** ditampilkan sebagai judul laporan.
-  - Kolom yang namanya mengandung kata "kehadiran"/"hadir"/"presensi" (mis.
-    `Kehadiran (%)`) ditampilkan sebagai metrik kehadiran.
-  - Kolom yang namanya mengandung kata "catatan" (mis. `Catatan Wali Kelas`)
-    ditampilkan sebagai catatan wali kelas.
-  - Kolom lainnya (mis. `Alkitab`, `Homiletika`, `Kepemimpinan`) otomatis
-    ditampilkan sebagai tabel nilai per mata pelajaran — tidak perlu ubah kode
-    kalau mata pelajaran berganti tiap semester, cukup ubah nama kolom di sheet.
+- Baris pertama = header, kolomnya tetap (nama kolom tidak case-sensitive):
+
+  | Kolom | Keterangan |
+  |---|---|
+  | `Email` | ditampilkan sebagai info tambahan di laporan (bukan bagian dari pencarian/login) |
+  | `Nomor HP` | dipakai untuk pencocokan akses siswa — wajib |
+  | `Nama` | dipakai untuk pencocokan akses siswa — wajib, judul laporan |
+  | `Kelas` | dipakai untuk pencocokan akses siswa — wajib |
+  | `Total Persentase Kuis` | angka 0-100 (boleh diisi mis. `82` atau `82%`) |
+  | `Total Persentase Kehadiran` | angka 0-100, persentase kehadiran Kelas Zoom |
+  | `Catatan` | teks bebas dari wali kelas, opsional — boleh dikosongkan |
+
 - Contoh 5 baris dummy untuk uji coba: [`data/dummy_semester_2_2026.csv`](data/dummy_semester_2_2026.csv).
+
+### Status kelulusan dihitung otomatis
+
+Aplikasi **tidak** membaca status lulus/tidak dari kolom manapun di sheet — status
+dihitung otomatis dari `Total Persentase Kuis` dan `Total Persentase Kehadiran`
+memakai syarat tetap:
+
+- Kehadiran Kelas Zoom minimal **75%**
+- Total nilai kuis minimal **70%**
+
+Siswa yang tidak memenuhi salah satu (atau keduanya) akan melihat pesan "Belum
+memenuhi syarat kelulusan" lengkap dengan kriteria mana yang kurang — Anda tidak
+perlu mengetik status ini secara manual per siswa. Kalau syarat kelulusan berubah
+di semester berikutnya, ubah `KEHADIRAN_MIN`/`KUIS_MIN` di bagian atas
+[`app.py`](app.py).
+
+**Soal format persen:** kalau kolom `Total Persentase Kuis`/`Total Persentase
+Kehadiran` di-format sebagai "Percent" oleh Google Sheets, nilainya akan terbaca
+sebagai pecahan (`0.75` untuk 75%) alih-alih `75`. Aplikasi ini sudah menangani
+kedua kemungkinan secara otomatis, tapi supaya konsisten sebaiknya format kolom
+tersebut sebagai **Number** biasa dan isi angka polos (`75`, bukan `0.75` atau
+`"75%"`).
 
 **Penting soal Nomor HP:** sebelum paste data, format kolom Nomor HP sebagai
 **Plain text** (klik kolom → Format → Number → Plain text) agar angka 0 di depan
@@ -127,13 +151,20 @@ streamlit run app.py
    [`data/dummy_semester_2_2026.csv`](data/dummy_semester_2_2026.csv).
 2. Jalankan `streamlit run app.py`, pilih semester "Semester 2 2026".
 3. Coba kombinasi berikut untuk memverifikasi alur:
-   - Kelas `MMin 2 Leadership` + HP `081234500001` → harus muncul laporan
-     "Test Satu".
-   - Kelas `MMin 2 Leadership` + HP `08123 4500 002` (dengan spasi) → harus tetap
-     cocok dengan "Test Dua" (menguji normalisasi spasi).
-   - Kelas `MMin 2 Leadership` + HP `+62 812-3450-0005` → harus cocok dengan
-     "Test Lima" (data di sheet sengaja disimpan dalam format `+62`, menguji
-     normalisasi dari kedua sisi).
+   - Kelas `MMin 2 Leadership` + HP `081234500001` → laporan "Test Satu" muncul,
+     status **memenuhi syarat kelulusan** (kuis 88%, kehadiran 95%).
+   - Kelas `MMin 2 Leadership` + HP `08123 4500 002` (dengan spasi) → tetap
+     cocok dengan "Test Dua" (menguji normalisasi spasi), status **belum
+     memenuhi syarat** karena kehadiran 68% (di bawah 75%) meski kuis 82% sudah
+     memenuhi syarat.
+   - Kelas `MMin 2 Pastoral` + HP `081234500003` → "Test Tiga", status **belum
+     memenuhi syarat** karena kuis 65% (di bawah 70%) meski kehadiran 90% sudah
+     memenuhi syarat.
+   - Kelas `MMin 2 Pastoral` + HP `081234500004` → "Test Empat", status **belum
+     memenuhi syarat** pada kedua kriteria sekaligus.
+   - Kelas `MMin 2 Leadership` + HP `+62 812-3450-0005` → cocok dengan "Test
+     Lima" (data di sheet sengaja disimpan dalam format `+62`, menguji
+     normalisasi dari kedua sisi), status **memenuhi syarat**.
    - Kelas `MMin 2 Pastoral` + HP `081234500001` (kelas salah) → harus muncul
      pesan generik "Data tidak ditemukan", bukan pesan spesifik.
 4. Setelah semua kombinasi di atas berhasil, ganti isi tab dengan data 240 siswa
