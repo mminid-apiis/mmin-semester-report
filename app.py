@@ -1,12 +1,15 @@
 import streamlit as st
 
 from lib.apps_script_client import AppsScriptError, call_apps_script
+from lib.i18n import LANGUAGES, get_lang, t
+from lib.theme import apply_theme, is_dark
 
 st.set_page_config(
     page_title="MMin Semester Report",
     page_icon=":material/school:",
     layout="centered",
 )
+apply_theme()
 
 KELAS_OPTIONS = ["MMin 2 Leadership", "MMin 2 Pastoral"]
 
@@ -51,39 +54,53 @@ def parse_percentage(value) -> float | None:
     return num * 100 if 0 <= num <= 1 else num
 
 
-st.title("Laporan semester MMin", icon=":material/school:")
-st.caption(
-    "Masukkan email, kelas, dan nomor HP yang terdaftar saat pendaftaran program untuk "
-    "melihat nilai dan kehadiran Anda."
-)
-st.caption(
-    f"Syarat kelulusan semester: kehadiran Kelas Zoom minimal {KEHADIRAN_MIN}% dan "
-    f"total nilai kuis minimal {KUIS_MIN}%."
-)
+lang_col, theme_col = st.columns([2, 1])
+with lang_col:
+    lang_codes = list(LANGUAGES.keys())
+    st.selectbox(
+        t("lang_label"),
+        options=lang_codes,
+        format_func=lambda code: LANGUAGES[code],
+        index=lang_codes.index(get_lang()),
+        key="lang",
+    )
+with theme_col:
+    st.radio(
+        t("theme_label"),
+        options=[False, True],
+        format_func=lambda d: t("theme_dark") if d else t("theme_light"),
+        index=1 if is_dark() else 0,
+        key="dark_mode",
+        horizontal=True,
+    )
+
+st.title(t("app_title"), icon=":material/school:")
+st.caption(t("intro_caption"))
+st.caption(t("criteria_caption", kehadiran_min=KEHADIRAN_MIN, kuis_min=KUIS_MIN))
 
 semesters = load_semesters()
 
 if not semesters:
-    st.error("Laporan belum tersedia saat ini. Hubungi wali kelas Anda.")
+    st.error(t("no_semesters_error"))
     st.stop()
 
 # Semester tidak dipilih siswa — otomatis pakai tab paling baru di spreadsheet.
 semester = semesters[-1]
 
 with st.form("lookup_form", border=True):
-    email = st.text_input("Email", placeholder="nama@email.com")
+    email = st.text_input(t("email_label"), placeholder=t("email_placeholder"))
     kelas = st.selectbox(
-        "Kelas", options=KELAS_OPTIONS, index=None, placeholder="Pilih kelas Anda"
+        t("kelas_label"), options=KELAS_OPTIONS, index=None, placeholder=t("kelas_placeholder")
     )
-    phone = st.text_input("Nomor HP", placeholder="08xxxxxxxxxx")
-    submitted = st.form_submit_button("Lihat laporan", icon=":material/search:")
+    phone = st.text_input(t("phone_label"), placeholder=t("phone_placeholder"))
+    submitted = st.form_submit_button(t("submit_button"), icon=":material/search:")
 
 if submitted:
     if not email.strip() or not kelas or not phone.strip():
-        st.warning("Lengkapi email, kelas, dan nomor HP terlebih dahulu.")
+        st.warning(t("warning_incomplete"))
         st.stop()
 
-    with st.spinner("Mencari data..."):
+    with st.spinner(t("spinner_search")):
         try:
             result = call_apps_script(
                 "get_report",
@@ -95,14 +112,11 @@ if submitted:
                 },
             )
         except AppsScriptError as exc:
-            st.error(str(exc))
+            st.error(t(exc.code))
             st.stop()
 
     if not result.get("ok"):
-        st.error(
-            "Data tidak ditemukan. Pastikan email, kelas, dan nomor HP sesuai dengan data "
-            "pendaftaran Anda."
-        )
+        st.error(t("error_not_found"))
         st.stop()
 
     data = normalize_fields(result.get("data", {}))
@@ -111,40 +125,36 @@ if submitted:
     kehadiran = parse_percentage(data.get(FIELD_KEHADIRAN))
     catatan = data.get(FIELD_CATATAN)
 
-    st.success(f"Ditemukan laporan untuk **{nama}** — {kelas}, {semester}")
+    st.success(t("success_found", nama=nama, kelas=kelas, semester=semester))
 
     col1, col2 = st.columns(2)
-    col1.metric("Total persentase kuis", f"{kuis:.0f}%" if kuis is not None else "-")
-    col2.metric("Total persentase kehadiran", f"{kehadiran:.0f}%" if kehadiran is not None else "-")
+    col1.metric(t("metric_kuis"), f"{kuis:.0f}%" if kuis is not None else "-")
+    col2.metric(t("metric_kehadiran"), f"{kehadiran:.0f}%" if kehadiran is not None else "-")
 
-    st.subheader("Status kelulusan semester", icon=":material/verified:")
+    st.subheader(t("status_subheader"), icon=":material/verified:")
     if kuis is None or kehadiran is None:
-        st.warning("Data belum lengkap untuk menentukan status kelulusan. Hubungi wali kelas Anda.")
+        st.warning(t("incomplete_data_warning"))
     else:
         kuis_ok = kuis >= KUIS_MIN
         kehadiran_ok = kehadiran >= KEHADIRAN_MIN
-        kehadiran_line = (
-            f"Kehadiran Zoom: {kehadiran:.0f}% (memenuhi syarat)"
-            if kehadiran_ok
-            else f"Kehadiran Zoom: {kehadiran:.0f}% (syarat minimal {KEHADIRAN_MIN}%)"
+        kehadiran_line = t(
+            "line_kehadiran_ok" if kehadiran_ok else "line_kehadiran_fail",
+            v=kehadiran,
+            min=KEHADIRAN_MIN,
         )
-        kuis_line = (
-            f"Total kuis: {kuis:.0f}% (memenuhi syarat)"
-            if kuis_ok
-            else f"Total kuis: {kuis:.0f}% (syarat minimal {KUIS_MIN}%)"
+        kuis_line = t(
+            "line_kuis_ok" if kuis_ok else "line_kuis_fail",
+            v=kuis,
+            min=KUIS_MIN,
         )
         if kuis_ok and kehadiran_ok:
-            st.success(
-                f"Memenuhi syarat kelulusan {semester}", icon=":material/check_circle:"
-            )
+            st.success(t("status_pass", semester=semester), icon=":material/check_circle:")
         else:
             st.error(
-                f"Belum memenuhi syarat kelulusan {semester}\n\n"
-                f"- {kehadiran_line}\n"
-                f"- {kuis_line}",
+                f"{t('status_fail', semester=semester)}\n\n- {kehadiran_line}\n- {kuis_line}",
                 icon=":material/cancel:",
             )
 
     if catatan:
-        st.subheader("Catatan wali kelas", icon=":material/edit_note:")
+        st.subheader(t("catatan_subheader"), icon=":material/edit_note:")
         st.write(catatan)

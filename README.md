@@ -10,6 +10,17 @@ langsung di **Google Sheets** (satu tab per semester). Aplikasi ini sendiri tida
 punya database lokal maupun upload file, jadi aman dijalankan di Streamlit
 Community Cloud.
 
+## Bahasa & tampilan
+
+Siswa bisa mengganti **bahasa** (Indonesia / English / 中文) dan **tampilan**
+(terang/gelap) lewat dua kontrol di bagian atas halaman — pilihan ini tersimpan
+selama sesi browser mereka. Semua teks antarmuka (label, pesan error, status
+kelulusan) ikut berubah bahasa; untuk menambah/mengubah teks lihat
+[`lib/i18n.py`](lib/i18n.py) (satu dict per bahasa, key harus sama persis di
+ketiganya). Kolom **Catatan** yang Anda isi sendiri di Google Sheets **tidak**
+ikut diterjemahkan otomatis — akan tampil apa adanya dalam bahasa yang Anda
+ketik.
+
 ## Cara kerja & privasi
 
 1. Siswa mengisi **Email**, memilih **Kelas** ("MMin 2 Leadership" / "MMin 2
@@ -193,6 +204,26 @@ urutan **paling kanan** (klik kanan tab → Move right, atau drag). Aplikasi
 otomatis memakai tab paling kanan sebagai semester aktif (bisa butuh sampai 5
 menit karena daftar tab di-cache) — tidak perlu ubah kode maupun deploy ulang
 Apps Script.
+
+## Checklist sebelum deploy
+
+- [ ] Kolom `Total Persentase Kuis`/`Total Persentase Kehadiran` format **Number**
+      biasa (bukan Percent) dan kolom `Nomor HP` format **Plain text**.
+- [ ] Semua 5 skenario uji di atas sudah dicoba dan hasilnya benar.
+- [ ] Data dummy sudah diganti dengan data 240 siswa asli, dan **setiap baris
+      dicek tidak ada Email/Nomor HP yang kosong atau duplikat** (kalau ada
+      dua siswa dengan Email+Kelas+Nomor HP identik, hanya baris pertama yang
+      pernah cocok yang akan ketemu — cek dengan fitur "Highlight duplicates"
+      Google Sheets atau filter manual).
+- [ ] Kolom `Kelas` di setiap baris **persis** `MMin 2 Leadership` atau
+      `MMin 2 Pastoral` (spasi/kapitalisasi ekstra pada Nomor HP & Email sudah
+      dinormalisasi otomatis, tapi Kelas dibandingkan setelah `trim()` saja —
+      hindari typo seperti "Mmin 2 leadership ").
+- [ ] `.streamlit/secrets.toml` **tidak** ikut ter-commit ke Git (`git status`
+      setelah `git add` — pastikan tidak ada baris `secrets.toml`).
+- [ ] Repo GitHub tujuan deploy sudah **public**.
+- [ ] Coba buka Web App URL Apps Script langsung di browser (`.../exec`) — kalau
+      muncul `{"ok":true,...}` berarti deployment aktif dan bisa diakses publik.
 
 ## Deploy ke Streamlit Community Cloud (gratis, tanpa kartu kredit)
 
