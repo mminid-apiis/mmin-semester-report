@@ -48,7 +48,7 @@ def parse_percentage(value) -> float | None:
 
 
 with st.container(key="hero"):
-    st.image("assets/logo_apiis.png")
+    st.image("assets/logo_apiis.png", width=140)
     st.caption(ORG_TAGLINE)
     st.title(t("app_title"))
 

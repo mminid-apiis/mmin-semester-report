@@ -55,10 +55,11 @@ _BRAND_CSS = """
     text-align: center;
 }
 .st-key-hero img {
-    display: block;
-    margin: 0 auto;
-    max-width: 140px;
-    height: auto;
+    display: block !important;
+    margin: 0 auto !important;
+    width: 140px !important;
+    max-width: 140px !important;
+    height: auto !important;
 }
 
 .st-key-card {

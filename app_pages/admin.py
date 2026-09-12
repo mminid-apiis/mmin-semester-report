@@ -181,7 +181,7 @@ def render_log_akses():
 
 
 with st.container(key="hero"):
-    st.image("assets/logo_apiis.png")
+    st.image("assets/logo_apiis.png", width=140)
     st.title("Admin Panel")
 
 if not is_authed():
