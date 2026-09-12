@@ -21,9 +21,13 @@ var COLUMN_PHONE = 'nomor hp';
 var COLUMN_EMAIL = 'email';
 var COLUMN_NAMA = 'nama';
 
-// Tab log akses siswa -- dibuat otomatis saat pertama kali dibutuhkan.
-var ACCESS_LOG_SHEET_NAME = '_AccessLog';
+// Tab log akses siswa -- satu tab per kelas, dibuat otomatis saat pertama
+// kali dibutuhkan (mis. "_AccessLog_Leadership", "_AccessLog_Pastoral").
+var ACCESS_LOG_PREFIX = '_AccessLog_';
 var ACCESS_LOG_HEADERS = ['Timestamp', 'Nama', 'Email', 'Kelas', 'Semester'];
+
+// Zona waktu dipakai saat menampilkan Timestamp log akses ke admin.
+var DISPLAY_TIMEZONE = 'Asia/Jakarta';
 
 function doGet(e) {
   return jsonResponse({ ok: true, message: 'MMin Semester Report backend is running.' });
@@ -179,16 +183,29 @@ function getReport(kelas, phone, email) {
 }
 
 /**
- * Catat satu kejadian "siswa berhasil melihat laporannya" ke tab _AccessLog
- * (dibuat otomatis kalau belum ada). Dibungkus try/catch supaya kalau gagal
- * menulis log, siswa tetap bisa melihat laporannya seperti biasa.
+ * Nama tab log akses untuk satu kelas, mis. "MMin 2 Leadership" ->
+ * "_AccessLog_Leadership". Sama seperti findClassSheet(), berdasar kata
+ * terakhir pada nilai Kelas.
+ */
+function accessLogSheetName(kelas) {
+  var parts = String(kelas).trim().split(/\s+/);
+  var keyword = parts[parts.length - 1];
+  return ACCESS_LOG_PREFIX + keyword;
+}
+
+/**
+ * Catat satu kejadian "siswa berhasil melihat laporannya" ke tab log akses
+ * kelas terkait (dibuat otomatis kalau belum ada). Dibungkus try/catch
+ * supaya kalau gagal menulis log, siswa tetap bisa melihat laporannya
+ * seperti biasa.
  */
 function logAccess(kelas, semesterLabel, nama, email) {
   try {
     var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-    var sheet = ss.getSheetByName(ACCESS_LOG_SHEET_NAME);
+    var sheetName = accessLogSheetName(kelas);
+    var sheet = ss.getSheetByName(sheetName);
     if (!sheet) {
-      sheet = ss.insertSheet(ACCESS_LOG_SHEET_NAME);
+      sheet = ss.insertSheet(sheetName);
       sheet.appendRow(ACCESS_LOG_HEADERS);
     }
     sheet.appendRow([new Date(), nama, email, kelas, semesterLabel]);
@@ -268,17 +285,28 @@ function adminSaveClass(kelas, rows) {
 }
 
 /**
- * Admin: ambil seluruh catatan _AccessLog (siapa membuka laporan, kapan).
- * Agregasi per-siswa (jumlah akses, terakhir diakses) dilakukan di sisi
- * Streamlit, bukan di sini, supaya Apps Script-nya tetap sederhana.
+ * Admin: ambil seluruh catatan log akses dari SEMUA tab "_AccessLog_*"
+ * (satu tab per kelas) sekaligus, digabung jadi satu daftar -- kolom Kelas
+ * di tiap baris sudah cukup untuk memilah per kelas di sisi Streamlit.
+ * Timestamp diformat ke zona waktu Asia/Jakarta (WIB) supaya tidak
+ * membingungkan (nilai aslinya tersimpan sebagai Date, bukan UTC/lokal
+ * tertentu -- ini murni soal bagaimana menampilkannya).
  */
 function adminAccessLog() {
   var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  var sheet = ss.getSheetByName(ACCESS_LOG_SHEET_NAME);
-  if (!sheet) return { ok: true, rows: [] };
+  var sheets = ss.getSheets();
+  var rows = [];
+  for (var i = 0; i < sheets.length; i++) {
+    var name = sheets[i].getName();
+    if (name.indexOf(ACCESS_LOG_PREFIX) !== 0) continue;
+    rows = rows.concat(readAccessLogSheet(sheets[i]));
+  }
+  return { ok: true, rows: rows };
+}
 
+function readAccessLogSheet(sheet) {
   var values = sheet.getDataRange().getValues();
-  if (values.length < 2) return { ok: true, rows: [] };
+  if (values.length < 2) return [];
 
   var headers = values[0].map(function (h) { return String(h).trim(); });
   var rows = [];
@@ -287,13 +315,13 @@ function adminAccessLog() {
     for (var c = 0; c < headers.length; c++) {
       var v = values[r][c];
       if (Object.prototype.toString.call(v) === '[object Date]') {
-        v = v.toISOString();
+        v = Utilities.formatDate(v, DISPLAY_TIMEZONE, 'yyyy-MM-dd HH:mm:ss');
       }
       obj[headers[c]] = v;
     }
     rows.push(obj);
   }
-  return { ok: true, rows: rows };
+  return rows;
 }
 
 function findColumn(headers, wantedLower) {

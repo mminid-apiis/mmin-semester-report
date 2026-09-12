@@ -295,12 +295,14 @@ header di Google Sheets langsung.
 ### Tab "Log Akses Siswa"
 
 Setiap kali seorang siswa **berhasil** melihat laporannya, Apps Script
-mencatatnya ke tab tersembunyi `_AccessLog` (dibuat otomatis, muncul di
-spreadsheet Anda tapi diabaikan oleh aplikasi karena namanya diawali `_`).
-Tab ini menampilkan:
+mencatatnya ke tab tersembunyi **satu per kelas** — `_AccessLog_Leadership`
+dan `_AccessLog_Pastoral` (dibuat otomatis, muncul di spreadsheet Anda tapi
+diabaikan oleh aplikasi karena namanya diawali `_`). Panel admin membaca
+keduanya sekaligus dan menampilkan:
 
 - **Ringkasan per siswa** — nama, email, kelas, jumlah akses, dan kapan
-  terakhir diakses (bisa difilter per kelas).
+  terakhir diakses (bisa difilter per kelas). Waktu ditampilkan dalam **WIB**
+  (Asia/Jakarta), format `yyyy-MM-dd HH:mm:ss`.
 - **Semua catatan akses (mentah)** — satu baris per kejadian, dengan waktu
   persis.
 - **Siswa yang belum pernah membuka laporannya** — klik "Cek sekarang" untuk
