@@ -56,8 +56,10 @@ sudah di-import.
    ("Data tidak ditemukan") — tidak diberitahu bagian mana yang salah, supaya
    tidak membantu orang menebak-nebak data siswa lain.
 
-Anda (guru) mengisi/update nilai **langsung di Google Sheets** seperti biasa
-(copy-paste/import CSV) — tidak ada form input di aplikasi ini.
+Anda (guru) bisa mengisi/update nilai **langsung di Google Sheets** seperti
+biasa (copy-paste/import CSV), atau lewat **Panel Admin** di dalam aplikasi ini
+sendiri (lihat bagian "Panel Admin" di bawah) — mana pun sama-sama valid,
+keduanya menulis ke spreadsheet yang sama.
 
 ## Struktur data di Google Sheets
 
@@ -192,8 +194,10 @@ apps_script_url = "https://script.google.com/macros/s/xxxxx/exec"
 spreadsheet_url = "https://docs.google.com/spreadsheets/d/ID_SPREADSHEET_INI/edit"
 ```
 
-(`apps_script_secret` sudah terisi otomatis dan harus sama dengan
-`SHARED_SECRET` di `Code.gs` pada langkah 2.)
+(`apps_script_secret` dan `admin_password` sudah terisi otomatis. `apps_script_secret`
+harus sama dengan `SHARED_SECRET` di `Code.gs` pada langkah 2. `admin_password`
+adalah password untuk masuk ke halaman Admin — lihat bagian "Panel Admin" di
+bawah; ganti kapan saja ke sesuatu yang mudah Anda ingat.)
 
 ## Menjalankan secara lokal
 
@@ -254,8 +258,65 @@ tetap ada sebagai arsip dan tidak akan terpakai lagi (bisa butuh sampai 5 menit
 untuk efeknya terlihat karena hasil `list_semesters` di-cache) — tidak perlu
 ubah kode maupun deploy ulang Apps Script.
 
+## Panel Admin
+
+Selain halaman "Laporan Semester" untuk siswa, ada halaman **Admin** (link di
+navigasi atas, bisa juga dibuka langsung lewat `/admin`) — dilindungi password
+(`admin_password` di `.streamlit/secrets.toml`). Setelah masuk, sesi tetap
+"ingat" login sampai Anda klik **Keluar** atau tutup tab.
+
+Ini bukan pengganti Google Sheets — Anda tetap bisa edit sheet langsung kapan
+saja — tapi cara alternatif yang lebih praktis untuk update rutin dari HP/laptop
+tanpa perlu buka Google Sheets.
+
+### Tab "Kelola Nilai"
+
+1. Pilih Kelas, klik **Muat data dari Google Sheets** — semua siswa di tab
+   kelas itu (tab yang sedang aktif, sama seperti yang dipakai siswa) muncul
+   sebagai tabel yang bisa diedit langsung (klik dua kali sel untuk ubah,
+   klik kanan baris untuk hapus, baris kosong di akhir untuk tambah siswa baru).
+2. **Atau** unggah file CSV dengan header yang sama (`Email, Nomor HP, Nama,
+   Kelas, Total Persentase Kuis, Total Persentase Kehadiran, Catatan`) untuk
+   mengisi tabel sekaligus — kolom yang tidak ada di CSV akan dikosongkan,
+   kolom ekstra di CSV yang tidak ada di sheet akan diabaikan (ada peringatan
+   di layar kalau ini terjadi).
+3. Centang kotak konfirmasi, lalu klik **Simpan ke Google Sheets**.
+
+**Penting:** menyimpan berarti **menimpa seluruh isi tab itu** dengan isi
+tabel di layar saat itu — bukan menambah/menggabung. Baris yang Anda hapus
+dari tabel akan hilang dari sheet juga. Google Sheets menyimpan riwayat
+versi sendiri (**File → Version history**) kalau butuh mengembalikan data
+yang tidak sengaja terhapus.
+
+Panel admin hanya bisa mengubah **isi baris** dengan kolom yang sudah ada di
+sheet — untuk menambah kolom baru (mis. mata pelajaran baru), tetap edit
+header di Google Sheets langsung.
+
+### Tab "Log Akses Siswa"
+
+Setiap kali seorang siswa **berhasil** melihat laporannya, Apps Script
+mencatatnya ke tab tersembunyi `_AccessLog` (dibuat otomatis, muncul di
+spreadsheet Anda tapi diabaikan oleh aplikasi karena namanya diawali `_`).
+Tab ini menampilkan:
+
+- **Ringkasan per siswa** — nama, email, kelas, jumlah akses, dan kapan
+  terakhir diakses (bisa difilter per kelas).
+- **Semua catatan akses (mentah)** — satu baris per kejadian, dengan waktu
+  persis.
+- **Siswa yang belum pernah membuka laporannya** — klik "Cek sekarang" untuk
+  membandingkan daftar siswa di kedua tab kelas dengan log akses; siswa yang
+  emailnya tidak pernah muncul di log akan terdaftar di sini. Ini jawaban
+  langsung untuk "siapa yang belum pernah cek nilainya".
+
 ## Checklist sebelum deploy
 
+- [ ] `Code.gs` di script.google.com sudah diperbarui ke versi terbaru (yang
+      punya `admin_list_class`/`admin_save_class`/`admin_access_log`) dan
+      **di-deploy ulang** (Deploy → Manage deployments → Edit → New version →
+      Deploy) — kalau lupa, halaman Admin akan menampilkan "Action tidak
+      dikenal."
+- [ ] `admin_password` sudah diisi di `.streamlit/secrets.toml` (lokal) **dan**
+      di Secrets Streamlit Cloud (production) — dua tempat terpisah.
 - [ ] Kolom `Total Persentase Kuis`/`Total Persentase Kehadiran` format **Number**
       biasa (bukan Percent) dan kolom `Nomor HP` format **Plain text**.
 - [ ] Semua 5 skenario uji di atas sudah dicoba dan hasilnya benar.

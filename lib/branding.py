@@ -19,6 +19,13 @@ _BRAND_CSS = """
 [data-testid="stHeader"] svg {
     fill: #eef4fa !important;
 }
+[data-testid="stTopNavLink"], [data-testid="stTopNavLink"] * {
+    color: #9fb8ce !important;
+}
+[data-testid="stTopNavLink"][aria-current="page"], [data-testid="stTopNavLink"][aria-current="page"] * {
+    color: #ffffff !important;
+    font-weight: 600;
+}
 .stApp::before, .stApp::after {
     content: "";
     position: fixed;
