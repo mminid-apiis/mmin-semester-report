@@ -54,9 +54,19 @@ _BRAND_CSS = """
     color: #ffffff !important;
     text-align: center;
 }
+/* st.image bungkus <img> dalam beberapa lapis div (stElementContainer >
+   stFullScreenFrame > stImage), semuanya ikut menyusut ke lebar gambar --
+   jadi margin:auto harus ditaruh di stElementContainer (elemen yang benar-
+   benar jadi flex item di dalam stVerticalBlock), bukan di <img> itu sendiri
+   yang sudah tidak sisa ruang untuk di-center. Selektor ini aman dipakai
+   untuk elemen lain (judul, caption) di dalam hero karena elemen yang
+   lebarnya sudah 100% tidak terpengaruh oleh margin:auto. */
+.st-key-hero [data-testid="stElementContainer"] {
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
 .st-key-hero img {
     display: block !important;
-    margin: 0 auto !important;
     width: 140px !important;
     max-width: 140px !important;
     height: auto !important;
