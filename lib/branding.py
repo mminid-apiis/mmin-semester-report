@@ -67,8 +67,8 @@ _BRAND_CSS = """
     background: #ffffff;
     border-radius: 14px;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.15);
-    padding: 2rem 2rem 1.5rem;
-    max-width: 460px;
+    padding: 2rem 2.5rem 1.5rem;
+    max-width: 1100px;
     margin: 2rem auto 3rem;
 }
 

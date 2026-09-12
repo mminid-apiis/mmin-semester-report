@@ -5,7 +5,7 @@ from lib.branding import apply_branding
 st.set_page_config(
     page_title="MMin Semester Report",
     page_icon="assets/logo_apiis.png",
-    layout="centered",
+    layout="wide",
 )
 apply_branding()
 
