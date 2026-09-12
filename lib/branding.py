@@ -67,8 +67,8 @@ _BRAND_CSS = """
 }
 .st-key-hero img {
     display: block !important;
-    width: 140px !important;
-    max-width: 140px !important;
+    width: 420px !important;
+    max-width: 420px !important;
     height: auto !important;
 }
 
