@@ -13,10 +13,6 @@ _TRANSLATIONS = {
             "Masukkan email, kelas, dan nomor HP yang terdaftar saat pendaftaran "
             "program untuk melihat nilai dan kehadiran Anda."
         ),
-        "criteria_caption": (
-            "Syarat kelulusan semester: kehadiran Kelas Zoom minimal {kehadiran_min}% "
-            "dan total nilai kuis minimal {kuis_min}%."
-        ),
         "lang_label": "🌐 Bahasa",
         "nav_student": "Laporan Semester",
         "nav_admin": "Admin",
@@ -42,9 +38,9 @@ _TRANSLATIONS = {
             "Data belum lengkap untuk menentukan status kelulusan. Hubungi wali kelas Anda."
         ),
         "line_kehadiran_ok": "Kehadiran Zoom: {v:.0f}% (memenuhi syarat)",
-        "line_kehadiran_fail": "Kehadiran Zoom: {v:.0f}% (syarat minimal {min}%)",
+        "line_kehadiran_fail": "Kehadiran Zoom: {v:.0f}% (belum memenuhi syarat)",
         "line_kuis_ok": "Total kuis: {v:.0f}% (memenuhi syarat)",
-        "line_kuis_fail": "Total kuis: {v:.0f}% (syarat minimal {min}%)",
+        "line_kuis_fail": "Total kuis: {v:.0f}% (belum memenuhi syarat)",
         "status_pass": "Memenuhi syarat kelulusan {semester}",
         "status_fail": "Belum memenuhi syarat kelulusan {semester}",
         "catatan_subheader": "Catatan wali kelas",
@@ -108,10 +104,6 @@ _TRANSLATIONS = {
             "Enter the email, class, and phone number you registered with to view "
             "your grades and attendance."
         ),
-        "criteria_caption": (
-            "Semester pass requirement: at least {kehadiran_min}% Zoom class "
-            "attendance and at least {kuis_min}% total quiz score."
-        ),
         "lang_label": "🌐 Language",
         "nav_student": "Semester Report",
         "nav_admin": "Admin",
@@ -137,9 +129,9 @@ _TRANSLATIONS = {
             "Data is incomplete to determine pass status. Please contact your class advisor."
         ),
         "line_kehadiran_ok": "Zoom attendance: {v:.0f}% (meets requirement)",
-        "line_kehadiran_fail": "Zoom attendance: {v:.0f}% (minimum required {min}%)",
+        "line_kehadiran_fail": "Zoom attendance: {v:.0f}% (does not yet meet requirement)",
         "line_kuis_ok": "Total quiz: {v:.0f}% (meets requirement)",
-        "line_kuis_fail": "Total quiz: {v:.0f}% (minimum required {min}%)",
+        "line_kuis_fail": "Total quiz: {v:.0f}% (does not yet meet requirement)",
         "status_pass": "Meets the pass requirement for {semester}",
         "status_fail": "Does not yet meet the pass requirement for {semester}",
         "catatan_subheader": "Class advisor's note",
@@ -200,10 +192,6 @@ _TRANSLATIONS = {
     "zh": {
         "app_title": "MMin 学期成绩单",
         "intro_caption": "请输入报名时登记的电子邮箱、班级和手机号码，以查看您的成绩和出勤情况。",
-        "criteria_caption": (
-            "本学期及格要求：Zoom 课堂出勤率至少 {kehadiran_min}%，"
-            "测验总分至少 {kuis_min}%。"
-        ),
         "lang_label": "🌐 语言",
         "nav_student": "学期成绩单",
         "nav_admin": "管理员",
@@ -224,9 +212,9 @@ _TRANSLATIONS = {
         "status_subheader": "学期及格状态",
         "incomplete_data_warning": "数据不完整，无法判定及格状态，请联系班主任。",
         "line_kehadiran_ok": "Zoom 出勤率：{v:.0f}%（符合要求）",
-        "line_kehadiran_fail": "Zoom 出勤率：{v:.0f}%（最低要求 {min}%）",
+        "line_kehadiran_fail": "Zoom 出勤率：{v:.0f}%（尚未符合要求）",
         "line_kuis_ok": "测验总分：{v:.0f}%（符合要求）",
-        "line_kuis_fail": "测验总分：{v:.0f}%（最低要求 {min}%）",
+        "line_kuis_fail": "测验总分：{v:.0f}%（尚未符合要求）",
         "status_pass": "已达到 {semester} 的及格要求",
         "status_fail": "尚未达到 {semester} 的及格要求",
         "catatan_subheader": "班主任备注",

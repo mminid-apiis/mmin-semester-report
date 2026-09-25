@@ -132,7 +132,14 @@ Siswa yang tidak memenuhi salah satu (atau keduanya) akan melihat pesan "Belum
 memenuhi syarat kelulusan" lengkap dengan kriteria mana yang kurang — Anda tidak
 perlu mengetik status ini secara manual per siswa. Kalau syarat kelulusan berubah
 di semester berikutnya, ubah `KEHADIRAN_MIN`/`KUIS_MIN` di bagian atas
-[`app.py`](app.py).
+[`app_pages/student.py`](app_pages/student.py).
+
+Angka syarat (75%/70%) sengaja **tidak** ditampilkan ke siswa — halaman siswa
+hanya menunjukkan persentase kuis/kehadiran milik mereka sendiri dan status
+"memenuhi"/"belum memenuhi syarat" tanpa menyebut angka minimalnya, supaya
+siswa tidak tahu persis ambang batasnya. Kalau menambah teks baru terkait status
+kelulusan di [`lib/i18n.py`](lib/i18n.py), pastikan tidak menyisipkan
+`KEHADIRAN_MIN`/`KUIS_MIN` ke dalamnya.
 
 **Soal format persen:** kalau kolom `Total Persentase Kuis`/`Total Persentase
 Kehadiran` di-format sebagai "Percent" oleh Google Sheets, nilainya akan terbaca

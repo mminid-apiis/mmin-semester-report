@@ -56,7 +56,6 @@ with st.container(key="card"):
     render_language_switcher()
 
     st.caption(t("intro_caption"))
-    st.caption(t("criteria_caption", kehadiran_min=KEHADIRAN_MIN, kuis_min=KUIS_MIN))
 
     semesters = load_semesters()
 
@@ -117,12 +116,10 @@ with st.container(key="card"):
             kehadiran_line = t(
                 "line_kehadiran_ok" if kehadiran_ok else "line_kehadiran_fail",
                 v=kehadiran,
-                min=KEHADIRAN_MIN,
             )
             kuis_line = t(
                 "line_kuis_ok" if kuis_ok else "line_kuis_fail",
                 v=kuis,
-                min=KUIS_MIN,
             )
             if kuis_ok and kehadiran_ok:
                 st.success(t("status_pass", semester=semester), icon=":material/check_circle:")
