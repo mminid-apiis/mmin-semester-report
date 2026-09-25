@@ -13,13 +13,28 @@ Cloud.
 
 ## Bahasa & tampilan
 
-Siswa bisa mengganti **bahasa** (Indonesia / English / 中文) lewat kontrol di
-atas halaman — pilihan ini tersimpan selama sesi browser mereka. Semua teks
-antarmuka (label, pesan error, status kelulusan) ikut berubah bahasa; untuk
-menambah/mengubah teks lihat [`lib/i18n.py`](lib/i18n.py) (satu dict per
-bahasa, key harus sama persis di ketiganya). Kolom **Catatan** yang Anda isi
-sendiri di Google Sheets **tidak** ikut diterjemahkan otomatis — akan tampil
-apa adanya dalam bahasa yang Anda ketik.
+Siswa maupun admin bisa mengganti **bahasa** (Indonesia / English / 中文) lewat
+tombol segmented (🇮🇩/🇬🇧/🇨🇳) di atas halaman — tersedia di halaman Laporan
+Semester **dan** halaman Admin (termasuk sebelum login), pilihan ini tersimpan
+selama sesi browser mereka. Semua teks antarmuka (label, pesan error, status
+kelulusan, seluruh isi panel admin) ikut berubah bahasa; untuk menambah/
+mengubah teks lihat [`lib/i18n.py`](lib/i18n.py) (satu dict per bahasa, key
+harus sama persis di ketiganya) — widget selector-nya sendiri ada di fungsi
+`render_language_switcher()` dalam file yang sama, dipakai bersama oleh kedua
+halaman. Kolom **Catatan** yang Anda isi sendiri di Google Sheets **tidak**
+ikut diterjemahkan otomatis — akan tampil apa adanya dalam bahasa yang Anda
+ketik. Nama kolom asli dari Google Sheets (`Email`, `Nomor HP`, `Nama`,
+`Kelas`, dst.) di tabel edit panel admin juga sengaja **tidak** diterjemahkan,
+supaya selalu cocok persis dengan header asli di spreadsheet Anda.
+
+**Gotcha kalau nanti menambah widget baru dengan `format_func` yang berubah
+menurut bahasa** (`st.selectbox`, `st.dataframe`, dll.): kalau *nilai* yang
+tersimpan tidak berubah saat bahasa diganti (mis. sentinel "semua kelas"),
+sebagian widget Streamlit (BaseWeb Select, glide-data-grid) bisa
+mempertahankan teks/nama kolom lama secara visual sampai widget itu
+di-remount. Sudah ditangani di `app_pages/admin.py` dengan menyisipkan
+`get_lang()` ke dalam `key=` widget yang terpengaruh — pakai pola yang sama
+kalau menambah widget serupa.
 
 Tampilannya sendiri **tetap** (tidak ada toggle terang/gelap) — gradasi navy
 gelap dengan kartu putih membulat di tengah, terinspirasi halaman login APIIS

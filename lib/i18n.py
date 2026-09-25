@@ -1,9 +1,9 @@
 import streamlit as st
 
 LANGUAGES = {
-    "id": "Indonesia",
-    "en": "English",
-    "zh": "中文",
+    "id": "🇮🇩 Indonesia",
+    "en": "🇬🇧 English",
+    "zh": "🇨🇳 中文",
 }
 
 _TRANSLATIONS = {
@@ -18,6 +18,8 @@ _TRANSLATIONS = {
             "dan total nilai kuis minimal {kuis_min}%."
         ),
         "lang_label": "🌐 Bahasa",
+        "nav_student": "Laporan Semester",
+        "nav_admin": "Admin",
         "no_semesters_error": "Laporan belum tersedia saat ini. Hubungi wali kelas Anda.",
         "email_label": "Email",
         "email_placeholder": "nama@email.com",
@@ -49,6 +51,56 @@ _TRANSLATIONS = {
         "err_not_configured": "Aplikasi belum dikonfigurasi dengan benar. Hubungi admin.",
         "err_network": "Tidak bisa terhubung ke server laporan. Coba lagi beberapa saat lagi.",
         "err_invalid_response": "Respons server tidak valid.",
+        # --- Admin panel ---
+        "admin_page_title": "Admin Panel",
+        "admin_login_title": "Masuk sebagai admin",
+        "admin_password_label": "Password admin",
+        "admin_login_button": "Masuk",
+        "admin_wrong_password": "Password salah.",
+        "admin_signed_in_caption": "Masuk sebagai admin",
+        "admin_logout_button": "Keluar",
+        "admin_tab_kelola": "Kelola Nilai",
+        "admin_tab_log": "Log Akses Siswa",
+        "admin_kelas_label": "Pilih kelas",
+        "admin_load_button": "Muat data dari Google Sheets",
+        "admin_loading_data": "Memuat data...",
+        "admin_load_error": "Gagal memuat data ({code}).",
+        "admin_load_error_generic": "Gagal memuat data.",
+        "admin_load_hint": 'Klik "Muat data dari Google Sheets" untuk mulai mengelola nilai kelas ini.',
+        "admin_active_tab_caption": "Tab aktif: **{sheet}**",
+        "admin_csv_upload_label": "Atau unggah CSV untuk mengisi tabel di bawah sekaligus",
+        "admin_csv_read_error": "Gagal membaca CSV: {err}",
+        "admin_csv_missing_cols": "Kolom CSV tidak lengkap, dikosongkan: {cols}",
+        "admin_csv_extra_cols": "Kolom CSV ini diabaikan (tidak ada di sheet): {cols}",
+        "admin_row_count_caption": "{n} baris siswa.",
+        "admin_confirm_save_label": (
+            "Saya yakin ingin menyimpan perubahan ini ke Google Sheets "
+            "(menimpa data lama di tab ini)."
+        ),
+        "admin_save_button": "Simpan ke Google Sheets",
+        "admin_saving_spinner": "Menyimpan...",
+        "admin_save_error": "Gagal menyimpan ({code}).",
+        "admin_save_error_generic": "Gagal menyimpan.",
+        "admin_save_success": "Tersimpan {n} baris ke Google Sheets.",
+        "admin_load_log_button": "Muat log akses",
+        "admin_loading_log": "Memuat log akses...",
+        "admin_log_load_error": "Gagal memuat log ({code}).",
+        "admin_log_load_error_generic": "Gagal memuat log.",
+        "admin_log_hint": 'Klik "Muat log akses" untuk melihat riwayat akses siswa.',
+        "admin_log_empty": "Belum ada catatan akses siswa.",
+        "admin_filter_kelas_label": "Filter kelas",
+        "admin_filter_all": "Semua kelas",
+        "admin_summary_subheader": "Ringkasan per siswa",
+        "admin_col_jumlah_akses": "Jumlah Akses",
+        "admin_col_terakhir_diakses": "Terakhir Diakses",
+        "admin_raw_log_expander": "Lihat semua catatan akses (mentah)",
+        "admin_missing_subheader": "Siswa yang belum pernah membuka laporannya",
+        "admin_check_now_button": "Cek sekarang",
+        "admin_comparing_spinner": "Membandingkan dengan daftar siswa...",
+        "admin_missing_warning": "{n} siswa belum pernah membuka laporan mereka:",
+        "admin_missing_none": (
+            "Semua siswa (yang datanya ada di sheet) pernah membuka laporan mereka."
+        ),
     },
     "en": {
         "app_title": "MMin Semester Report",
@@ -61,6 +113,8 @@ _TRANSLATIONS = {
             "attendance and at least {kuis_min}% total quiz score."
         ),
         "lang_label": "🌐 Language",
+        "nav_student": "Semester Report",
+        "nav_admin": "Admin",
         "no_semesters_error": "Reports are not available right now. Please contact your class advisor.",
         "email_label": "Email",
         "email_placeholder": "name@email.com",
@@ -92,6 +146,56 @@ _TRANSLATIONS = {
         "err_not_configured": "The app is not configured correctly. Please contact the admin.",
         "err_network": "Could not connect to the report server. Please try again shortly.",
         "err_invalid_response": "Invalid server response.",
+        # --- Admin panel ---
+        "admin_page_title": "Admin Panel",
+        "admin_login_title": "Sign in as admin",
+        "admin_password_label": "Admin password",
+        "admin_login_button": "Sign in",
+        "admin_wrong_password": "Incorrect password.",
+        "admin_signed_in_caption": "Signed in as admin",
+        "admin_logout_button": "Log out",
+        "admin_tab_kelola": "Manage Grades",
+        "admin_tab_log": "Student Access Log",
+        "admin_kelas_label": "Select class",
+        "admin_load_button": "Load data from Google Sheets",
+        "admin_loading_data": "Loading data...",
+        "admin_load_error": "Failed to load data ({code}).",
+        "admin_load_error_generic": "Failed to load data.",
+        "admin_load_hint": 'Click "Load data from Google Sheets" to start managing this class\'s grades.',
+        "admin_active_tab_caption": "Active tab: **{sheet}**",
+        "admin_csv_upload_label": "Or upload a CSV to fill the table below at once",
+        "admin_csv_read_error": "Failed to read CSV: {err}",
+        "admin_csv_missing_cols": "CSV is missing these columns, left blank: {cols}",
+        "admin_csv_extra_cols": "These CSV columns were ignored (not in the sheet): {cols}",
+        "admin_row_count_caption": "{n} student rows.",
+        "admin_confirm_save_label": (
+            "I confirm I want to save these changes to Google Sheets "
+            "(this overwrites the old data in this tab)."
+        ),
+        "admin_save_button": "Save to Google Sheets",
+        "admin_saving_spinner": "Saving...",
+        "admin_save_error": "Failed to save ({code}).",
+        "admin_save_error_generic": "Failed to save.",
+        "admin_save_success": "Saved {n} rows to Google Sheets.",
+        "admin_load_log_button": "Load access log",
+        "admin_loading_log": "Loading access log...",
+        "admin_log_load_error": "Failed to load log ({code}).",
+        "admin_log_load_error_generic": "Failed to load log.",
+        "admin_log_hint": 'Click "Load access log" to view students\' access history.',
+        "admin_log_empty": "No student access records yet.",
+        "admin_filter_kelas_label": "Filter by class",
+        "admin_filter_all": "All classes",
+        "admin_summary_subheader": "Per-student summary",
+        "admin_col_jumlah_akses": "Access Count",
+        "admin_col_terakhir_diakses": "Last Accessed",
+        "admin_raw_log_expander": "View all access records (raw)",
+        "admin_missing_subheader": "Students who have never opened their report",
+        "admin_check_now_button": "Check now",
+        "admin_comparing_spinner": "Comparing with student roster...",
+        "admin_missing_warning": "{n} students have never opened their report:",
+        "admin_missing_none": (
+            "All students (whose data is in the sheet) have opened their report."
+        ),
     },
     "zh": {
         "app_title": "MMin 学期成绩单",
@@ -101,6 +205,8 @@ _TRANSLATIONS = {
             "测验总分至少 {kuis_min}%。"
         ),
         "lang_label": "🌐 语言",
+        "nav_student": "学期成绩单",
+        "nav_admin": "管理员",
         "no_semesters_error": "目前暂无成绩单，请联系班主任。",
         "email_label": "电子邮箱",
         "email_placeholder": "name@email.com",
@@ -127,14 +233,73 @@ _TRANSLATIONS = {
         "err_not_configured": "应用程序配置有误，请联系管理员。",
         "err_network": "无法连接到成绩单服务器，请稍后再试。",
         "err_invalid_response": "服务器响应无效。",
+        # --- Admin panel ---
+        "admin_page_title": "管理面板",
+        "admin_login_title": "以管理员身份登录",
+        "admin_password_label": "管理员密码",
+        "admin_login_button": "登录",
+        "admin_wrong_password": "密码错误。",
+        "admin_signed_in_caption": "已以管理员身份登录",
+        "admin_logout_button": "退出登录",
+        "admin_tab_kelola": "成绩管理",
+        "admin_tab_log": "学生访问记录",
+        "admin_kelas_label": "选择班级",
+        "admin_load_button": "从 Google 表格加载数据",
+        "admin_loading_data": "正在加载数据...",
+        "admin_load_error": "加载数据失败（{code}）。",
+        "admin_load_error_generic": "加载数据失败。",
+        "admin_load_hint": "点击「从 Google 表格加载数据」以开始管理该班级的成绩。",
+        "admin_active_tab_caption": "当前表格：**{sheet}**",
+        "admin_csv_upload_label": "或上传 CSV 文件一次性填充下方表格",
+        "admin_csv_read_error": "读取 CSV 失败：{err}",
+        "admin_csv_missing_cols": "CSV 缺少以下列，已留空：{cols}",
+        "admin_csv_extra_cols": "以下 CSV 列已被忽略（表格中不存在）：{cols}",
+        "admin_row_count_caption": "共 {n} 行学生数据。",
+        "admin_confirm_save_label": "我确认要将这些更改保存到 Google 表格（将覆盖该表中的旧数据）。",
+        "admin_save_button": "保存到 Google 表格",
+        "admin_saving_spinner": "正在保存...",
+        "admin_save_error": "保存失败（{code}）。",
+        "admin_save_error_generic": "保存失败。",
+        "admin_save_success": "已将 {n} 行保存到 Google 表格。",
+        "admin_load_log_button": "加载访问记录",
+        "admin_loading_log": "正在加载访问记录...",
+        "admin_log_load_error": "加载记录失败（{code}）。",
+        "admin_log_load_error_generic": "加载记录失败。",
+        "admin_log_hint": "点击「加载访问记录」以查看学生的访问历史。",
+        "admin_log_empty": "目前还没有学生访问记录。",
+        "admin_filter_kelas_label": "按班级筛选",
+        "admin_filter_all": "所有班级",
+        "admin_summary_subheader": "每位学生的汇总",
+        "admin_col_jumlah_akses": "访问次数",
+        "admin_col_terakhir_diakses": "最后访问时间",
+        "admin_raw_log_expander": "查看所有访问记录（原始数据）",
+        "admin_missing_subheader": "从未打开过成绩单的学生",
+        "admin_check_now_button": "立即检查",
+        "admin_comparing_spinner": "正在与学生名单比对...",
+        "admin_missing_warning": "有 {n} 位学生从未打开过成绩单：",
+        "admin_missing_none": "所有学生（表格中有数据的）都已打开过他们的成绩单。",
     },
 }
 
 
 def get_lang() -> str:
-    return st.session_state.get("lang", "id")
+    return st.session_state.get("lang") or "id"
 
 
 def t(key: str, **kwargs) -> str:
     text = _TRANSLATIONS.get(get_lang(), _TRANSLATIONS["id"]).get(key, key)
     return text.format(**kwargs) if kwargs else text
+
+
+def render_language_switcher():
+    """Tombol segmented ID/EN/ZH -- dipakai di halaman siswa maupun admin."""
+    codes = list(LANGUAGES.keys())
+    st.segmented_control(
+        t("lang_label"),
+        options=codes,
+        format_func=lambda code: LANGUAGES[code],
+        default=get_lang(),
+        required=True,
+        key="lang",
+        label_visibility="collapsed",
+    )

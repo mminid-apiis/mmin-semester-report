@@ -2,7 +2,7 @@ import streamlit as st
 
 from lib.apps_script_client import AppsScriptError, call_apps_script
 from lib.constants import KELAS_OPTIONS
-from lib.i18n import LANGUAGES, get_lang, t
+from lib.i18n import render_language_switcher, t
 
 ORG_TAGLINE = "21st Century Training. For Christians. For Free"
 
@@ -53,14 +53,7 @@ with st.container(key="hero"):
     st.title(t("app_title"))
 
 with st.container(key="card"):
-    lang_codes = list(LANGUAGES.keys())
-    st.selectbox(
-        t("lang_label"),
-        options=lang_codes,
-        format_func=lambda code: LANGUAGES[code],
-        index=lang_codes.index(get_lang()),
-        key="lang",
-    )
+    render_language_switcher()
 
     st.caption(t("intro_caption"))
     st.caption(t("criteria_caption", kehadiran_min=KEHADIRAN_MIN, kuis_min=KUIS_MIN))
