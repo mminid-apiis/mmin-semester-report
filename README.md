@@ -216,10 +216,10 @@ apps_script_url = "https://script.google.com/macros/s/xxxxx/exec"
 spreadsheet_url = "https://docs.google.com/spreadsheets/d/ID_SPREADSHEET_INI/edit"
 ```
 
-(`apps_script_secret` dan `admin_password` sudah terisi otomatis. `apps_script_secret`
-harus sama dengan `SHARED_SECRET` di `Code.gs` pada langkah 2. `admin_password`
-adalah password untuk masuk ke halaman Admin — lihat bagian "Panel Admin" di
-bawah; ganti kapan saja ke sesuatu yang mudah Anda ingat.)
+(`apps_script_secret` dan tabel `[admin_accounts]` sudah terisi otomatis.
+`apps_script_secret` harus sama dengan `SHARED_SECRET` di `Code.gs` pada langkah 2.
+`[admin_accounts]` berisi akun untuk masuk ke halaman Admin — lihat bagian
+"Panel Admin" di bawah.)
 
 ## Menjalankan secara lokal
 
@@ -229,6 +229,24 @@ py -3 -m venv .venv
 pip install -r requirements.txt
 streamlit run app.py
 ```
+
+## Menguji `Code.gs` tanpa Google
+
+Apps Script tidak bisa dijalankan di komputer sendiri, jadi ada harness Node
+(`tests/apps_script/`) yang menjalankan `Code.gs` **asli** dengan layanan
+Google (Sheets, Gmail, Lock) diganti tiruan di memori — tidak ada data atau
+email sungguhan yang tersentuh. Butuh Node.js.
+
+```bash
+node tests/apps_script/code_gs.test.js   # uji logika: audit, konflik edit, notifikasi, dll.
+node tests/apps_script/mock_server.js    # backend palsu di http://127.0.0.1:8765 untuk uji tampilan
+```
+
+Untuk uji tampilan, arahkan `apps_script_url` di `.streamlit/secrets.toml`
+**sementara** ke `http://127.0.0.1:8765` dan `apps_script_secret` ke
+`test-shared-secret`, lalu kembalikan sebelum deploy. Jalankan Streamlit dengan
+Python dari `.venv` proyek (`.venv\Scripts\python.exe -m streamlit run app.py`),
+bukan Python global — versi Streamlit-nya bisa berbeda.
 
 ## Uji coba dengan data dummy
 
@@ -283,9 +301,35 @@ ubah kode maupun deploy ulang Apps Script.
 ## Panel Admin
 
 Selain halaman "Laporan Semester" untuk siswa, ada halaman **Admin** (link di
-navigasi atas, bisa juga dibuka langsung lewat `/admin`) — dilindungi password
-(`admin_password` di `.streamlit/secrets.toml`). Setelah masuk, sesi tetap
-"ingat" login sampai Anda klik **Keluar** atau tutup tab.
+navigasi atas, bisa juga dibuka langsung lewat `/admin`).
+
+### Akun admin
+
+Setiap admin punya akun sendiri, didefinisikan di tabel `[admin_accounts]`
+pada `.streamlit/secrets.toml` (dan pada Secrets Streamlit Cloud — dua tempat
+terpisah):
+
+```toml
+[admin_accounts]
+admin1 = "password-admin-1"
+admin2 = "password-admin-2"
+admin3 = "password-admin-3"
+admin4 = "password-admin-4"
+```
+
+- Nama di kiri (`admin1`, ...) adalah nama akun yang dipilih saat login dan
+  yang tercatat di log. Boleh diganti ke nama orangnya (mis. `budi`) atau
+  ditambah/dikurangi — daftar akun di layar login mengikuti isi tabel ini.
+- **Beberapa admin bisa login bersamaan** (tiap browser punya sesi sendiri).
+  Sesi tetap "ingat" login sampai klik **Keluar** atau tutup tab.
+- **Mencabut akses seseorang:** hapus barisnya dari `[admin_accounts]` di
+  Secrets Streamlit Cloud — sesinya yang sedang terbuka pun langsung dianggap
+  tidak login lagi pada interaksi berikutnya. Ganti password dengan mengubah
+  nilainya (sesi lama yang sudah login tidak otomatis keluar).
+- Setiap **login berhasil, login gagal, dan logout** dicatat ke log aktivitas
+  admin (lihat bawah). Setelah 5 kali salah password di satu sesi browser, login
+  dikunci 5 menit untuk sesi itu. Ini hanya peredam kecepatan (membuka browser
+  baru mengulang hitungannya), jadi tetap pakai password yang panjang dan acak.
 
 Ini bukan pengganti Google Sheets — Anda tetap bisa edit sheet langsung kapan
 saja — tapi cara alternatif yang lebih praktis untuk update rutin dari HP/laptop
@@ -310,6 +354,15 @@ dari tabel akan hilang dari sheet juga. Google Sheets menyimpan riwayat
 versi sendiri (**File → Version history**) kalau butuh mengembalikan data
 yang tidak sengaja terhapus.
 
+**Dua admin menyimpan bersamaan:** karena simpan itu menimpa seluruh tab, saat
+data dimuat aplikasi mengingat "sidik jari" isi tab-nya. Kalau saat Anda
+menyimpan isi tab sudah berubah (admin lain menyimpan lebih dulu, atau ada yang
+mengedit Sheets langsung), simpan **ditolak** dengan pesan jelas — pekerjaan
+orang lain tidak tertimpa. Muat ulang data, ulangi perubahan Anda, simpan lagi.
+Di pesan itu ada tombol untuk mengunduh tabel Anda (CSV) sebagai cadangan.
+Setiap simpan yang berhasil menampilkan ringkasan (berapa sel diubah, siswa
+ditambah/dihapus) dan dicatat rinci di log aktivitas admin.
+
 Panel admin hanya bisa mengubah **isi baris** dengan kolom yang sudah ada di
 sheet — untuk menambah kolom baru (mis. mata pelajaran baru), tetap edit
 header di Google Sheets langsung.
@@ -332,15 +385,91 @@ keduanya sekaligus dan menampilkan:
   emailnya tidak pernah muncul di log akan terdaftar di sini. Ini jawaban
   langsung untuk "siapa yang belum pernah cek nilainya".
 
+### Tab "Notifikasi"
+
+Mengirim email ke siswa berisi link ke aplikasi ini, dari akun Google yang
+men-deploy Apps Script (pemilik script). Email **tidak pernah** memuat nilai,
+status kelulusan, atau syaratnya — hanya link dan cara membukanya, dalam
+Indonesia + English + 中文. Dua jenis:
+
+- **Laporan baru tersedia** — ke semua siswa di kelas itu. Siswa yang sudah
+  pernah dikirimi jenis ini **untuk semester yang sama** otomatis dilewati
+  (mencegah kirim ganda; aman diulang kalau pengiriman terputus di tengah).
+- **Pengingat (belum membuka)** — hanya ke siswa yang belum membuka laporan
+  **semester ini** (log akses lama dari semester sebelumnya tidak dihitung),
+  dan belum diingatkan dalam 48 jam terakhir.
+
+Alurnya: pilih kelas → **Muat status notifikasi** → pilih jenis → cek daftar
+penerima & isi email (persis seperti yang akan terkirim) → opsional **Kirim email
+contoh** (dikirim ke pemilik script, bukan ke siswa) → centang konfirmasi →
+**Kirim**. Pengiriman berjalan per 30 email dengan progress bar; hasil dan
+riwayatnya tercatat (tab tersembunyi `_NotifLog`, dan ringkasan di log
+aktivitas admin).
+
+Hal yang perlu diketahui:
+
+- **Kuota email harian Google:** sekitar 100/hari untuk akun Gmail biasa dan
+  sekitar 1.500/hari untuk Google Workspace. Sisa kuota ditampilkan di layar;
+  kalau habis di tengah jalan, lanjutkan keesokan harinya — siswa yang sudah
+  menerima tidak akan dikirimi lagi.
+- Email keluar dari alamat pemilik script, jadi sebagian bisa masuk folder spam
+  siswa. Minta siswa memeriksa spam, atau tambahkan satu kalimat pemberitahuan
+  lewat grup kelas sebelum mengirim.
+- Siswa dengan email kosong/tidak valid di sheet dilewati dan ditampilkan
+  namanya di layar supaya bisa diperbaiki.
+- Ubah link di email lewat konstanta `PORTAL_URL` di `Code.gs` (bukan dari
+  layar admin, supaya tidak bisa disalahgunakan untuk mengirim link lain).
+
+### Tab "Log Aktivitas Admin"
+
+Log di tab tersembunyi `_AdminAuditLog` (dibuat otomatis), terbaru di atas,
+waktu dalam WIB. Mencatat:
+
+- **Login, login gagal, logout** — per akun admin, plus ringkasan jumlah login
+  dan login terakhir tiap admin.
+- **Simpan nilai** — ringkasan, lalu satu baris per perubahan: siswa (email),
+  kolom, **nilai lama → nilai baru**, siapa admin-nya. Siswa yang ditambah atau
+  dihapus juga dicatat. Isi kolom **Nomor HP sengaja tidak ditulis apa adanya**
+  ke log (hanya "(disembunyikan)"), supaya log tidak jadi tempat bocornya
+  nomor siswa.
+- **Simpan ditolak** karena konflik dengan admin lain, **kirim notifikasi**, dan
+  **kirim email contoh**.
+
+Log ini hanya bertambah dari aplikasi — jangan diedit manual kalau mau
+dipakai sebagai bukti.
+
 ## Checklist sebelum deploy
 
-- [ ] `Code.gs` di script.google.com sudah diperbarui ke versi terbaru (yang
-      punya `admin_list_class`/`admin_save_class`/`admin_access_log`) dan
-      **di-deploy ulang** (Deploy → Manage deployments → Edit → New version →
-      Deploy) — kalau lupa, halaman Admin akan menampilkan "Action tidak
-      dikenal."
-- [ ] `admin_password` sudah diisi di `.streamlit/secrets.toml` (lokal) **dan**
-      di Secrets Streamlit Cloud (production) — dua tempat terpisah.
+Urutan yang aman untuk update ke versi yang punya akun admin, audit log, dan
+notifikasi (supaya halaman Admin tidak sempat error di production):
+
+1. **Perbarui Apps Script.** Buka script.google.com → project backend → ganti
+   seluruh isi `Code.gs` dengan isi `google_apps_script/Code.gs` (isi ulang
+   `SPREADSHEET_ID` dan `SHARED_SECRET`; atau pakai
+   `google_apps_script/Code.deploy.gs` lokal yang konstantanya sudah terisi —
+   file itu di-`.gitignore`).
+2. **Beri izin kirim email, sekali saja.** Di dropdown fungsi editor pilih
+   `authorizeScopes` → **Run** → setujui izin (muncul peringatan "Google hasn't
+   verified this app" → Advanced → lanjutkan; aman karena Anda pembuatnya).
+3. **Deploy versi baru** (Deploy → Manage deployments → Edit → New version →
+   Deploy). Versi baru ini kompatibel dengan aplikasi Streamlit versi lama.
+4. **Isi Secrets Streamlit Cloud:** tambahkan tabel `[admin_accounts]` (salin dari
+   `.streamlit/secrets.toml` lokal), lalu hapus baris `admin_password` yang lama.
+5. **Baru setelah itu push kode** ke GitHub. Streamlit Cloud akan membangun
+   ulang (menginstal versi Streamlit sesuai `requirements.txt`).
+
+Daftar cek:
+
+- [ ] `Code.gs` di script.google.com sudah versi terbaru (punya
+      `admin_log_event`/`admin_audit_log`/`admin_notify_*`), `authorizeScopes`
+      sudah dijalankan, dan sudah **di-deploy ulang** — kalau lupa, halaman Admin
+      menampilkan "Action tidak dikenal." atau peringatan bahwa login gagal
+      dicatat ke log.
+- [ ] Tabel `[admin_accounts]` sudah diisi di `.streamlit/secrets.toml` (lokal)
+      **dan** di Secrets Streamlit Cloud (production) — dua tempat terpisah.
+- [ ] `requirements.txt` membatasi Streamlit ke lini yang sudah diuji
+      (`>=1.63,<1.64`). Kode memakai `st.subheader(..., icon=...)` yang baru ada
+      sejak 1.63; naikkan batasnya hanya setelah dicoba di lokal pakai `.venv`.
 - [ ] Kolom `Total Persentase Kuis`/`Total Persentase Kehadiran` format **Number**
       biasa (bukan Percent) dan kolom `Nomor HP` format **Plain text**.
 - [ ] Semua 5 skenario uji di atas sudah dicoba dan hasilnya benar.

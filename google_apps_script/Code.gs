@@ -7,6 +7,10 @@
  *
  * Setiap kali file ini diubah, WAJIB buat versi baru agar perubahan aktif:
  *   Deploy -> Manage deployments -> Edit (pensil) -> Version: New version -> Deploy
+ *
+ * Fitur notifikasi email butuh izin tambahan (kirim email). Setelah menempel
+ * versi ini, pilih fungsi `authorizeScopes` di dropdown editor, klik Run, dan
+ * setujui izinnya SEKALI -- baru setelah itu deploy versi baru.
  */
 
 // GANTI dengan ID spreadsheet (bagian URL setelah /d/, SEBELUM /edit), BUKAN URL lengkap.
@@ -28,6 +32,33 @@ var ACCESS_LOG_HEADERS = ['Timestamp', 'Nama', 'Email', 'Kelas', 'Semester'];
 
 // Zona waktu dipakai saat menampilkan Timestamp log akses ke admin.
 var DISPLAY_TIMEZONE = 'Asia/Jakarta';
+
+// Log aktivitas admin (login, logout, ubah nilai, kirim email) -- satu tab
+// untuk semua kelas, dibuat otomatis saat pertama kali dibutuhkan.
+var ADMIN_AUDIT_SHEET = '_AdminAuditLog';
+var ADMIN_AUDIT_HEADERS = [
+  'Timestamp', 'Admin', 'Aksi', 'Kelas', 'Siswa (Email)', 'Kolom', 'Nilai Lama', 'Nilai Baru', 'Keterangan'
+];
+// Event yang boleh dicatat langsung dari Streamlit lewat admin_log_event.
+var ADMIN_EVENTS = ['login', 'login_gagal', 'logout'];
+// Batas jumlah baris "ubah_nilai" per sekali simpan (sisanya diringkas) dan
+// jumlah baris log yang dikirim balik ke panel admin.
+var ADMIN_AUDIT_MAX_CHANGE_ROWS = 1500;
+var ADMIN_AUDIT_MAX_RETURN_ROWS = 5000;
+// Isi kolom ini tidak ditulis apa adanya ke log (hanya "(disembunyikan)").
+var AUDIT_MASKED_COLUMNS = ['nomor hp'];
+
+// Notifikasi email ke siswa (lihat adminNotifySend).
+var NOTIF_LOG_SHEET = '_NotifLog';
+var NOTIF_LOG_HEADERS = ['Timestamp', 'Admin', 'Kelas', 'Semester', 'Email', 'Jenis', 'Status'];
+var NOTIF_STATUS_SENT = 'terkirim';
+// Jumlah email per sekali panggilan (Streamlit memanggil berulang sampai habis).
+var NOTIF_BATCH_SIZE = 30;
+// Pengingat tidak dikirim lagi ke siswa yang sudah diingatkan dalam jangka ini.
+var REMINDER_COOLDOWN_HOURS = 48;
+// Link yang dicantumkan di email -- ubah di sini kalau alamat aplikasi berubah.
+var PORTAL_URL = 'https://mmin-semester-report.streamlit.app/';
+var MAIL_SENDER_NAME = 'APIIS MMin';
 
 function doGet(e) {
   return jsonResponse({ ok: true, message: 'MMin Semester Report backend is running.' });
@@ -55,9 +86,19 @@ function doPost(e) {
       case 'admin_list_class':
         return jsonResponse(adminListClass(body.kelas));
       case 'admin_save_class':
-        return jsonResponse(adminSaveClass(body.kelas, body.rows));
+        return jsonResponse(adminSaveClass(body.kelas, body.rows, body.admin, body.baseVersion));
       case 'admin_access_log':
         return jsonResponse(adminAccessLog());
+      case 'admin_log_event':
+        return jsonResponse(adminLogEvent(body.admin, body.event, body.detail));
+      case 'admin_audit_log':
+        return jsonResponse(adminAuditLog());
+      case 'admin_notify_status':
+        return jsonResponse(adminNotifyStatus(body.kelas, body.force));
+      case 'admin_notify_send':
+        return jsonResponse(adminNotifySend(body.kelas, body.jenis, body.admin, body.force, body.exclude));
+      case 'admin_notify_test':
+        return jsonResponse(adminNotifyTest(body.kelas, body.jenis, body.admin));
       default:
         return jsonResponse({ ok: false, message: 'Action tidak dikenal.' });
     }
@@ -227,6 +268,19 @@ function adminListClass(kelas) {
   if (!sheet) return { ok: false, message: 'Tab untuk kelas ini tidak ditemukan.' };
 
   var values = sheet.getDataRange().getValues();
+  var parsed = valuesToRows(values);
+  // `version` = sidik jari isi tab saat ini; dikirim balik saat menyimpan
+  // supaya perubahan admin lain di antaranya bisa terdeteksi (adminSaveClass).
+  return {
+    ok: true,
+    sheetName: sheet.getName(),
+    headers: parsed.headers,
+    rows: parsed.rows,
+    version: dataVersion(values)
+  };
+}
+
+function valuesToRows(values) {
   var headers = values.length > 0 ? values[0].map(function (h) { return String(h).trim(); }) : [];
   var rows = [];
   for (var r = 1; r < values.length; r++) {
@@ -237,7 +291,18 @@ function adminListClass(kelas) {
     }
     rows.push(rowObj);
   }
-  return { ok: true, sheetName: sheet.getName(), headers: headers, rows: rows };
+  return { headers: headers, rows: rows };
+}
+
+function dataVersion(values) {
+  var digest = Utilities.computeDigest(
+    Utilities.DigestAlgorithm.MD5,
+    JSON.stringify(values),
+    Utilities.Charset.UTF_8
+  );
+  return digest.map(function (b) {
+    return ('0' + (b & 0xff).toString(16)).slice(-2);
+  }).join('');
 }
 
 /**
@@ -245,43 +310,257 @@ function adminListClass(kelas) {
  * dengan `rows` yang baru -- dipakai oleh tabel-edit & upload CSV di panel
  * admin. Kolom Nomor HP dipaksa berformat teks supaya angka 0 di depan
  * tidak hilang.
+ *
+ * - `admin`: nama akun admin yang menyimpan (dicatat ke log aktivitas admin).
+ * - `baseVersion`: `version` dari adminListClass saat data dimuat. Kalau
+ *   isi tab sudah berubah sejak itu (mis. admin lain menyimpan lebih dulu),
+ *   simpan ditolak dengan code 'conflict' supaya tidak menimpa pekerjaan
+ *   orang lain. Kosong = tidak dicek (kompatibel dengan klien lama).
+ * - Setiap perubahan (sel diubah / siswa ditambah / siswa dihapus) dicatat ke
+ *   tab _AdminAuditLog. Isi kolom Nomor HP tidak dicatat apa adanya.
  */
-function adminSaveClass(kelas, rows) {
+function adminSaveClass(kelas, rows, admin, baseVersion) {
   if (!kelas || !rows) return { ok: false, message: 'Data tidak lengkap.' };
   var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   var sheet = findClassSheet(ss, kelas);
   if (!sheet) return { ok: false, message: 'Tab untuk kelas ini tidak ditemukan.' };
+  var adminName = cleanAdminName(admin);
 
-  var lastRow = sheet.getLastRow();
-  var lastCol = sheet.getLastColumn();
-  if (lastCol === 0) return { ok: false, message: 'Sheet belum punya header.' };
+  return withScriptLock(function () {
+    var lastRow = sheet.getLastRow();
+    var lastCol = sheet.getLastColumn();
+    if (lastCol === 0) return { ok: false, message: 'Sheet belum punya header.' };
 
-  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function (h) {
-    return String(h).trim();
+    var current = sheet.getDataRange().getValues();
+    if (baseVersion && baseVersion !== dataVersion(current)) {
+      appendLogRows(ADMIN_AUDIT_SHEET, ADMIN_AUDIT_HEADERS, [[
+        new Date(), adminName, 'simpan_ditolak', kelas, '', '', '', '',
+        'Data di sheet sudah berubah sejak dimuat (kemungkinan admin lain menyimpan lebih dulu).'
+      ]]);
+      return {
+        ok: false,
+        code: 'conflict',
+        message: 'Data di sheet sudah berubah sejak Anda memuatnya.'
+      };
+    }
+
+    var parsed = valuesToRows(current);
+    var headers = parsed.headers;
+    var changes = diffClassRows(headers, parsed.rows, rows);
+
+    if (lastRow > 1) {
+      sheet.getRange(2, 1, lastRow - 1, lastCol).clearContent();
+    }
+
+    if (rows.length > 0) {
+      var phoneColIdx = findColumn(headers, COLUMN_PHONE);
+      if (phoneColIdx !== -1) {
+        sheet.getRange(2, phoneColIdx + 1, rows.length, 1).setNumberFormat('@');
+      }
+
+      var output = rows.map(function (row) {
+        return headers.map(function (h) {
+          var v = row[h];
+          return v === undefined || v === null ? '' : v;
+        });
+      });
+
+      sheet.getRange(2, 1, output.length, headers.length).setValues(output);
+    }
+    SpreadsheetApp.flush();
+
+    appendLogRows(
+      ADMIN_AUDIT_SHEET,
+      ADMIN_AUDIT_HEADERS,
+      buildSaveAuditRows(adminName, kelas, changes, rows.length, parsed.rows.length)
+    );
+
+    return {
+      ok: true,
+      savedRows: rows.length,
+      version: dataVersion(sheet.getDataRange().getValues()),
+      changes: changes.counts
+    };
   });
+}
 
-  if (lastRow > 1) {
-    sheet.getRange(2, 1, lastRow - 1, lastCol).clearContent();
+function cleanAdminName(name) {
+  var s = String(name === undefined || name === null ? '' : name).trim().substring(0, 40);
+  return safeCell(s || '(tidak diketahui)');
+}
+
+function cellText(v) {
+  return v === undefined || v === null ? '' : String(v).trim();
+}
+
+// Cegah teks yang diawali = + - @ dibaca Sheets sebagai rumus saat ditulis ke log.
+function safeCell(v) {
+  if (typeof v === 'string' && /^[=+\-@]/.test(v)) return "'" + v;
+  return v;
+}
+
+function withScriptLock(fn) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    return fn();
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function getOrCreateLogSheet(ss, name, headers) {
+  var sheet = ss.getSheetByName(name);
+  if (!sheet) {
+    sheet = ss.insertSheet(name, ss.getNumSheets());
+    sheet.appendRow(headers);
+  }
+  return sheet;
+}
+
+function appendLogRows(name, headers, rows) {
+  if (!rows.length) return;
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = getOrCreateLogSheet(ss, name, headers);
+  var start = sheet.getLastRow() + 1;
+  sheet.getRange(start, 1, rows.length, headers.length).setValues(rows);
+}
+
+/**
+ * Bandingkan isi tab sebelum (oldRows) dan sesudah (newRows) disimpan.
+ * Siswa dikenali lewat Email (huruf kecil); kalau Email kosong, lewat Nama;
+ * kalau keduanya kosong atau ada yang kembar, lewat nomor urut baris.
+ */
+function diffClassRows(headers, oldRows, newRows) {
+  var emailIdx = findColumn(headers, COLUMN_EMAIL);
+  var namaIdx = findColumn(headers, COLUMN_NAMA);
+  var emailHeader = emailIdx === -1 ? null : headers[emailIdx];
+  var namaHeader = namaIdx === -1 ? null : headers[namaIdx];
+
+  function keysFor(rows) {
+    var seen = {};
+    return rows.map(function (row, i) {
+      var key = emailHeader ? cellText(row[emailHeader]).toLowerCase() : '';
+      if (!key) {
+        var nama = namaHeader ? cellText(row[namaHeader]).toLowerCase() : '';
+        key = nama ? '#' + nama : '#baris' + (i + 1);
+      }
+      if (seen[key]) {
+        seen[key]++;
+        key = key + '#' + seen[key];
+      } else {
+        seen[key] = 1;
+      }
+      return key;
+    });
   }
 
-  if (rows.length === 0) {
-    return { ok: true, savedRows: 0 };
+  var oldKeys = keysFor(oldRows);
+  var newKeys = keysFor(newRows);
+  var oldMap = {};
+  var newMap = {};
+  oldKeys.forEach(function (k, i) { oldMap[k] = oldRows[i]; });
+  newKeys.forEach(function (k, i) { newMap[k] = newRows[i]; });
+
+  var list = [];
+  var counts = { ubah: 0, tambah: 0, hapus: 0 };
+
+  function identity(row, key) {
+    return {
+      email: emailHeader ? cellText(row[emailHeader]) : '',
+      nama: namaHeader ? cellText(row[namaHeader]) : '',
+      key: key
+    };
   }
 
-  var phoneColIdx = findColumn(headers, COLUMN_PHONE);
-  if (phoneColIdx !== -1) {
-    sheet.getRange(2, phoneColIdx + 1, rows.length, 1).setNumberFormat('@');
-  }
-
-  var output = rows.map(function (row) {
-    return headers.map(function (h) {
-      var v = row[h];
-      return v === undefined || v === null ? '' : v;
+  newKeys.forEach(function (key, i) {
+    var newRow = newRows[i];
+    var who = identity(newRow, key);
+    if (!Object.prototype.hasOwnProperty.call(oldMap, key)) {
+      counts.tambah++;
+      list.push({ aksi: 'tambah_siswa', email: who.email, nama: who.nama, kolom: '', lama: '', baru: '' });
+      return;
+    }
+    var oldRow = oldMap[key];
+    headers.forEach(function (h) {
+      if (!h) return;
+      var oldV = cellText(oldRow[h]);
+      var newV = cellText(newRow[h]);
+      if (oldV === newV) return;
+      var masked = AUDIT_MASKED_COLUMNS.indexOf(h.toLowerCase()) !== -1;
+      counts.ubah++;
+      list.push({
+        aksi: 'ubah_nilai',
+        email: who.email,
+        nama: who.nama,
+        kolom: h,
+        lama: masked ? '(disembunyikan)' : oldV,
+        baru: masked ? '(disembunyikan)' : newV
+      });
     });
   });
 
-  sheet.getRange(2, 1, output.length, headers.length).setValues(output);
-  return { ok: true, savedRows: output.length };
+  oldKeys.forEach(function (key, i) {
+    if (Object.prototype.hasOwnProperty.call(newMap, key)) return;
+    var who = identity(oldRows[i], key);
+    counts.hapus++;
+    list.push({ aksi: 'hapus_siswa', email: who.email, nama: who.nama, kolom: '', lama: '', baru: '' });
+  });
+
+  return { list: list, counts: counts };
+}
+
+function buildSaveAuditRows(adminName, kelas, changes, newTotal, oldTotal) {
+  var now = new Date();
+  var c = changes.counts;
+  var summary = c.ubah + c.tambah + c.hapus === 0
+    ? 'Tanpa perubahan (' + newTotal + ' baris).'
+    : 'Ubah ' + c.ubah + ' sel, tambah ' + c.tambah + ' siswa, hapus ' + c.hapus +
+      ' siswa. Total ' + newTotal + ' baris (sebelumnya ' + oldTotal + ').';
+  var out = [[now, adminName, 'simpan_nilai', kelas, '', '', '', '', summary]];
+
+  var shown = changes.list.slice(0, ADMIN_AUDIT_MAX_CHANGE_ROWS);
+  shown.forEach(function (ch) {
+    out.push([
+      now, adminName, ch.aksi, kelas,
+      safeCell(ch.email), safeCell(ch.kolom), safeCell(ch.lama), safeCell(ch.baru),
+      safeCell(ch.nama)
+    ]);
+  });
+  if (changes.list.length > shown.length) {
+    out.push([
+      now, adminName, 'simpan_nilai', kelas, '', '', '', '',
+      '... dan ' + (changes.list.length - shown.length) + ' perubahan lain tidak dirinci.'
+    ]);
+  }
+  return out;
+}
+
+/**
+ * Admin: catat login/logout/login gagal (dipanggil dari Streamlit, yang
+ * memverifikasi password). Hanya event di ADMIN_EVENTS yang diterima.
+ */
+function adminLogEvent(admin, event, detail) {
+  if (ADMIN_EVENTS.indexOf(event) === -1) return { ok: false, message: 'Event tidak dikenal.' };
+  withScriptLock(function () {
+    appendLogRows(ADMIN_AUDIT_SHEET, ADMIN_AUDIT_HEADERS, [[
+      new Date(), cleanAdminName(admin), event, '', '', '', '', '',
+      safeCell(String(detail || '').substring(0, 200))
+    ]]);
+  });
+  return { ok: true };
+}
+
+/** Admin: log aktivitas admin (paling baru di akhir), dibatasi ADMIN_AUDIT_MAX_RETURN_ROWS. */
+function adminAuditLog() {
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName(ADMIN_AUDIT_SHEET);
+  if (!sheet) return { ok: true, rows: [] };
+  var rows = readAccessLogSheet(sheet);
+  if (rows.length > ADMIN_AUDIT_MAX_RETURN_ROWS) {
+    rows = rows.slice(rows.length - ADMIN_AUDIT_MAX_RETURN_ROWS);
+  }
+  return { ok: true, rows: rows };
 }
 
 /**
@@ -322,6 +601,302 @@ function readAccessLogSheet(sheet) {
     rows.push(obj);
   }
   return rows;
+}
+
+// ---------------------------------------------------------------------------
+// Notifikasi email ke siswa
+//
+// Hanya dijalankan atas permintaan admin dari panel Admin. Email SELALU hanya
+// berisi link ke aplikasi dan cara membukanya -- tidak pernah memuat nilai,
+// status lulus, atau syarat kelulusan. Penerima dipilih di sini, bukan dikirim
+// dari klien, dan hanya siswa yang ada di tab kelas dengan email valid.
+// ---------------------------------------------------------------------------
+
+/** Jalankan SEKALI dari editor Apps Script (tombol Run) untuk memberi izin kirim email. */
+function authorizeScopes() {
+  MailApp.getRemainingDailyQuota();
+  Session.getEffectiveUser().getEmail();
+  LockService.getScriptLock();
+  SpreadsheetApp.openById(SPREADSHEET_ID);
+}
+
+function emailLooksValid(s) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+}
+
+function readSheetObjects(sheet) {
+  var values = sheet.getDataRange().getValues();
+  if (values.length < 2) return [];
+  var headers = values[0].map(function (h) { return String(h).trim(); });
+  var rows = [];
+  for (var r = 1; r < values.length; r++) {
+    var obj = {};
+    for (var c = 0; c < headers.length; c++) obj[headers[c]] = values[r][c];
+    rows.push(obj);
+  }
+  return rows;
+}
+
+/** Kumpulkan data yang dibutuhkan untuk menentukan siapa yang layak dikirimi email. */
+function buildNotifyContext(ss, kelas) {
+  var sheet = findClassSheet(ss, kelas);
+  if (!sheet) return null;
+  var semester = displaySemesterLabel(sheet.getName(), kelas);
+
+  var values = sheet.getDataRange().getValues();
+  var parsed = valuesToRows(values);
+  var emailIdx = findColumn(parsed.headers, COLUMN_EMAIL);
+  var namaIdx = findColumn(parsed.headers, COLUMN_NAMA);
+  var emailHeader = emailIdx === -1 ? null : parsed.headers[emailIdx];
+  var namaHeader = namaIdx === -1 ? null : parsed.headers[namaIdx];
+
+  var students = [];
+  var invalid = [];
+  var seen = {};
+  parsed.rows.forEach(function (row) {
+    var email = emailHeader ? cellText(row[emailHeader]) : '';
+    var nama = namaHeader ? cellText(row[namaHeader]) : '';
+    if (!email && !nama) return;
+    if (!emailLooksValid(email)) {
+      invalid.push(nama || '(tanpa nama)');
+      return;
+    }
+    var key = email.toLowerCase();
+    if (seen[key]) return;
+    seen[key] = true;
+    students.push({ nama: nama, email: email });
+  });
+
+  // Siapa yang sudah menerima email jenis apa (khusus kelas + semester ini).
+  var sent = {};
+  var notifSheet = ss.getSheetByName(NOTIF_LOG_SHEET);
+  if (notifSheet) {
+    readSheetObjects(notifSheet).forEach(function (r) {
+      if (r['Kelas'] !== kelas || r['Semester'] !== semester || r['Status'] !== NOTIF_STATUS_SENT) return;
+      var key = cellText(r['Email']).toLowerCase();
+      var jenis = cellText(r['Jenis']);
+      var ts = r['Timestamp'] instanceof Date ? r['Timestamp'].getTime() : 0;
+      if (!sent[key]) sent[key] = {};
+      if (!sent[key][jenis] || sent[key][jenis] < ts) sent[key][jenis] = ts;
+    });
+  }
+
+  // Siapa yang sudah membuka laporan SEMESTER INI (log akses menyimpan semester).
+  var opened = {};
+  var accessSheet = ss.getSheetByName(accessLogSheetName(kelas));
+  if (accessSheet) {
+    readSheetObjects(accessSheet).forEach(function (r) {
+      if (r['Semester'] !== semester) return;
+      opened[cellText(r['Email']).toLowerCase()] = true;
+    });
+  }
+
+  return { sheet: sheet, semester: semester, students: students, invalid: invalid, sent: sent, opened: opened };
+}
+
+/**
+ * Tentukan siapa yang akan dikirimi email `jenis` ('baru' atau 'pengingat').
+ * Sumber kebenaran tunggal: dipakai untuk pratinjau (adminNotifyStatus) maupun
+ * pengiriman sungguhan (adminNotifySend), jadi keduanya selalu konsisten.
+ *  - baru: lewati siswa yang sudah pernah menerima email "baru" semester ini.
+ *  - pengingat: lewati siswa yang sudah membuka laporan semester ini, dan yang
+ *    sudah diingatkan dalam REMINDER_COOLDOWN_HOURS terakhir.
+ * `force` mengabaikan "sudah dikirim"/"baru diingatkan" (bukan "sudah membuka").
+ */
+function planNotification(ctx, jenis, force) {
+  var eligible = [];
+  var skipped = [];
+  var cooldownMs = REMINDER_COOLDOWN_HOURS * 3600 * 1000;
+  var now = new Date().getTime();
+
+  ctx.students.forEach(function (s) {
+    var key = s.email.toLowerCase();
+    var mine = ctx.sent[key] || {};
+    var reason = '';
+    if (jenis === 'baru') {
+      if (mine.baru && !force) reason = 'sudah_dikirim';
+    } else {
+      if (ctx.opened[key]) reason = 'sudah_membuka';
+      else if (mine.pengingat && !force && now - mine.pengingat < cooldownMs) reason = 'baru_diingatkan';
+    }
+    if (reason) skipped.push({ nama: s.nama, email: s.email, reason: reason });
+    else eligible.push({ nama: s.nama, email: s.email });
+  });
+
+  return { eligible: eligible, skipped: skipped };
+}
+
+function renderEmail(jenis, nama, kelas, semester) {
+  var url = PORTAL_URL;
+  var reminder = jenis === 'pengingat';
+  var greetId = nama ? 'Halo ' + nama + ',' : 'Halo,';
+  var greetEn = nama ? 'Hello ' + nama + ',' : 'Hello,';
+  var greetZh = nama ? nama + ' 您好，' : '您好，';
+
+  var subject = reminder
+    ? 'Pengingat: laporan semester MMin Anda sudah tersedia (Reminder / 提醒)'
+    : 'Laporan semester MMin Anda sudah tersedia (Your report is ready / 成绩单已发布)';
+
+  var intro = reminder
+    ? ['Jika Anda belum sempat membukanya, laporan semester MMin Anda (' + kelas + ', ' + semester + ') bisa dilihat di:',
+       'If you have not had a chance to open it yet, your MMin semester report (' + kelas + ', ' + semester + ') is available at:',
+       '如果您还没有查看，您的 MMin 学期成绩单（' + kelas + '，' + semester + '）可在此查看：']
+    : ['Laporan semester MMin Anda (' + kelas + ', ' + semester + ') sudah bisa dilihat di:',
+       'Your MMin semester report (' + kelas + ', ' + semester + ') is now available at:',
+       '您的 MMin 学期成绩单（' + kelas + '，' + semester + '）现已可以查看：'];
+
+  var body = [
+    greetId, '', intro[0], url, '',
+    'Cara membuka: masukkan email, kelas, dan nomor HP yang Anda daftarkan saat pendaftaran program, lalu klik "Lihat laporan".',
+    'Jika ada kendala, silakan hubungi wali kelas Anda.',
+    '',
+    '-----',
+    '',
+    greetEn, '', intro[1], url, '',
+    'To open it, enter the email, class, and phone number you used when registering for the program, then click "View report".',
+    'If you run into any trouble, please contact your class advisor.',
+    '',
+    '-----',
+    '',
+    greetZh, '', intro[2], url, '',
+    '请输入报名时登记的电子邮箱、班级和手机号码，然后点击“查看成绩单”。',
+    '如有问题，请联系您的班主任。',
+    '',
+    'APIIS — 21st Century Training. For Christians. For Free'
+  ].join('\n');
+
+  return { subject: subject, body: body };
+}
+
+function validNotifyJenis(jenis) {
+  return jenis === 'baru' || jenis === 'pengingat';
+}
+
+/**
+ * Admin: ringkasan untuk layar Notifikasi -- sisa kuota email, siapa yang
+ * akan/tidak akan dikirimi untuk tiap jenis, isi email persis seperti yang
+ * akan dikirim, dan riwayat pengiriman terakhir kelas ini.
+ */
+function adminNotifyStatus(kelas, force) {
+  if (!kelas) return { ok: false, message: 'Kelas wajib diisi.' };
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var ctx = buildNotifyContext(ss, kelas);
+  if (!ctx) return { ok: false, message: 'Tab untuk kelas ini tidak ditemukan.' };
+
+  var history = [];
+  var notifSheet = ss.getSheetByName(NOTIF_LOG_SHEET);
+  if (notifSheet) {
+    history = readAccessLogSheet(notifSheet)
+      .filter(function (r) { return r['Kelas'] === kelas; })
+      .slice(-15)
+      .reverse();
+  }
+
+  return {
+    ok: true,
+    sheetName: ctx.sheet.getName(),
+    semester: ctx.semester,
+    quota: MailApp.getRemainingDailyQuota(),
+    ownerEmail: Session.getEffectiveUser().getEmail(),
+    batchSize: NOTIF_BATCH_SIZE,
+    totalStudents: ctx.students.length + ctx.invalid.length,
+    invalidNames: ctx.invalid,
+    plans: {
+      baru: planNotification(ctx, 'baru', !!force),
+      pengingat: planNotification(ctx, 'pengingat', !!force)
+    },
+    previews: {
+      baru: renderEmail('baru', '(Nama Siswa)', kelas, ctx.semester),
+      pengingat: renderEmail('pengingat', '(Nama Siswa)', kelas, ctx.semester)
+    },
+    history: history
+  };
+}
+
+/**
+ * Admin: kirim email `jenis` ke SATU batch (maks NOTIF_BATCH_SIZE) siswa yang
+ * layak berikutnya, lalu kembalikan sisanya. Streamlit memanggil berulang
+ * sampai `remaining` = 0. Setiap kiriman dicatat di _NotifLog (dipakai untuk
+ * mencegah kirim ganda) dan ringkasannya di _AdminAuditLog.
+ * `exclude` = email yang gagal pada putaran ini, supaya tidak dicoba terus.
+ */
+function adminNotifySend(kelas, jenis, admin, force, exclude) {
+  if (!kelas) return { ok: false, message: 'Kelas wajib diisi.' };
+  if (!validNotifyJenis(jenis)) return { ok: false, message: 'Jenis notifikasi tidak dikenal.' };
+  var adminName = cleanAdminName(admin);
+
+  return withScriptLock(function () {
+    var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    var ctx = buildNotifyContext(ss, kelas);
+    if (!ctx) return { ok: false, message: 'Tab untuk kelas ini tidak ditemukan.' };
+
+    var excluded = {};
+    (exclude || []).forEach(function (e) { excluded[String(e).toLowerCase()] = true; });
+    var queue = planNotification(ctx, jenis, !!force).eligible.filter(function (s) {
+      return !excluded[s.email.toLowerCase()];
+    });
+
+    var quota = MailApp.getRemainingDailyQuota();
+    if (queue.length > 0 && quota <= 0) {
+      return { ok: false, code: 'quota', message: 'Kuota email harian habis.' };
+    }
+
+    var batch = queue.slice(0, Math.min(NOTIF_BATCH_SIZE, quota));
+    var logRows = [];
+    var sent = 0;
+    var failed = [];
+    batch.forEach(function (s) {
+      var mail = renderEmail(jenis, s.nama, kelas, ctx.semester);
+      try {
+        MailApp.sendEmail({ to: s.email, subject: mail.subject, body: mail.body, name: MAIL_SENDER_NAME });
+        sent++;
+        logRows.push([new Date(), adminName, kelas, ctx.semester, safeCell(s.email), jenis, NOTIF_STATUS_SENT]);
+      } catch (err) {
+        failed.push(s.email);
+        console.error('sendEmail gagal: ' + err);
+        logRows.push([new Date(), adminName, kelas, ctx.semester, safeCell(s.email), jenis, 'gagal']);
+      }
+    });
+
+    if (logRows.length) {
+      appendLogRows(NOTIF_LOG_SHEET, NOTIF_LOG_HEADERS, logRows);
+      appendLogRows(ADMIN_AUDIT_SHEET, ADMIN_AUDIT_HEADERS, [[
+        new Date(), adminName, 'kirim_notifikasi', kelas, '', '', '', '',
+        jenis + ': terkirim ' + sent + ', gagal ' + failed.length + (force ? ' (kirim ulang)' : '')
+      ]]);
+    }
+
+    return {
+      ok: true,
+      sent: sent,
+      failed: failed,
+      remaining: queue.length - batch.length,
+      quotaLeft: MailApp.getRemainingDailyQuota()
+    };
+  });
+}
+
+/** Admin: kirim satu email contoh ke pemilik script (akun yang men-deploy), bukan ke siswa. */
+function adminNotifyTest(kelas, jenis, admin) {
+  if (!kelas) return { ok: false, message: 'Kelas wajib diisi.' };
+  if (!validNotifyJenis(jenis)) return { ok: false, message: 'Jenis notifikasi tidak dikenal.' };
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = findClassSheet(ss, kelas);
+  if (!sheet) return { ok: false, message: 'Tab untuk kelas ini tidak ditemukan.' };
+  var owner = Session.getEffectiveUser().getEmail();
+  if (!owner) return { ok: false, message: 'Email pemilik script tidak terbaca.' };
+  if (MailApp.getRemainingDailyQuota() <= 0) {
+    return { ok: false, code: 'quota', message: 'Kuota email harian habis.' };
+  }
+
+  var mail = renderEmail(jenis, '(Nama Siswa)', kelas, displaySemesterLabel(sheet.getName(), kelas));
+  MailApp.sendEmail({ to: owner, subject: '[TES] ' + mail.subject, body: mail.body, name: MAIL_SENDER_NAME });
+  withScriptLock(function () {
+    appendLogRows(ADMIN_AUDIT_SHEET, ADMIN_AUDIT_HEADERS, [[
+      new Date(), cleanAdminName(admin), 'kirim_tes', kelas, '', '', '', '', jenis + ' -> ' + owner
+    ]]);
+  });
+  return { ok: true, to: owner };
 }
 
 function findColumn(headers, wantedLower) {

@@ -2,3 +2,5 @@
 .venv/
 __pycache__/
 *.pyc
+# Salinan Code.gs yang sudah berisi SPREADSHEET_ID & SHARED_SECRET asli -- jangan di-commit.
+google_apps_script/Code.deploy.gs
