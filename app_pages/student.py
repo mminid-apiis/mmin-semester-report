@@ -111,23 +111,10 @@ with st.container(key="card"):
         if kuis is None or kehadiran is None:
             st.warning(t("incomplete_data_warning"))
         else:
-            kuis_ok = kuis >= KUIS_MIN
-            kehadiran_ok = kehadiran >= KEHADIRAN_MIN
-            kehadiran_line = t(
-                "line_kehadiran_ok" if kehadiran_ok else "line_kehadiran_fail",
-                v=kehadiran,
-            )
-            kuis_line = t(
-                "line_kuis_ok" if kuis_ok else "line_kuis_fail",
-                v=kuis,
-            )
-            if kuis_ok and kehadiran_ok:
+            if kuis >= KUIS_MIN and kehadiran >= KEHADIRAN_MIN:
                 st.success(t("status_pass", semester=semester), icon=":material/check_circle:")
             else:
-                st.error(
-                    f"{t('status_fail', semester=semester)}\n\n- {kehadiran_line}\n- {kuis_line}",
-                    icon=":material/cancel:",
-                )
+                st.error(t("status_fail", semester=semester), icon=":material/cancel:")
 
         if catatan:
             st.subheader(t("catatan_subheader"), icon=":material/edit_note:")

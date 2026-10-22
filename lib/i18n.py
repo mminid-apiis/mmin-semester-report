@@ -37,10 +37,6 @@ _TRANSLATIONS = {
         "incomplete_data_warning": (
             "Data belum lengkap untuk menentukan status kelulusan. Hubungi wali kelas Anda."
         ),
-        "line_kehadiran_ok": "Kehadiran Zoom: {v:.0f}% (memenuhi syarat)",
-        "line_kehadiran_fail": "Kehadiran Zoom: {v:.0f}% (belum memenuhi syarat)",
-        "line_kuis_ok": "Total kuis: {v:.0f}% (memenuhi syarat)",
-        "line_kuis_fail": "Total kuis: {v:.0f}% (belum memenuhi syarat)",
         "status_pass": "Memenuhi syarat kelulusan {semester}",
         "status_fail": "Belum memenuhi syarat kelulusan {semester}",
         "catatan_subheader": "Catatan wali kelas",
@@ -233,10 +229,6 @@ _TRANSLATIONS = {
         "incomplete_data_warning": (
             "Data is incomplete to determine pass status. Please contact your class advisor."
         ),
-        "line_kehadiran_ok": "Zoom attendance: {v:.0f}% (meets requirement)",
-        "line_kehadiran_fail": "Zoom attendance: {v:.0f}% (does not yet meet requirement)",
-        "line_kuis_ok": "Total quiz: {v:.0f}% (meets requirement)",
-        "line_kuis_fail": "Total quiz: {v:.0f}% (does not yet meet requirement)",
         "status_pass": "Meets the pass requirement for {semester}",
         "status_fail": "Does not yet meet the pass requirement for {semester}",
         "catatan_subheader": "Class advisor's note",
@@ -419,10 +411,6 @@ _TRANSLATIONS = {
         "metric_kehadiran": "出勤总百分比",
         "status_subheader": "学期及格状态",
         "incomplete_data_warning": "数据不完整，无法判定及格状态，请联系班主任。",
-        "line_kehadiran_ok": "Zoom 出勤率：{v:.0f}%（符合要求）",
-        "line_kehadiran_fail": "Zoom 出勤率：{v:.0f}%（尚未符合要求）",
-        "line_kuis_ok": "测验总分：{v:.0f}%（符合要求）",
-        "line_kuis_fail": "测验总分：{v:.0f}%（尚未符合要求）",
         "status_pass": "已达到 {semester} 的及格要求",
         "status_fail": "尚未达到 {semester} 的及格要求",
         "catatan_subheader": "班主任备注",

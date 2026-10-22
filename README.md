@@ -128,16 +128,16 @@ memakai syarat tetap:
 - Kehadiran Kelas Zoom minimal **75%**
 - Total nilai kuis minimal **70%**
 
-Siswa yang tidak memenuhi salah satu (atau keduanya) akan melihat pesan "Belum
-memenuhi syarat kelulusan" lengkap dengan kriteria mana yang kurang — Anda tidak
-perlu mengetik status ini secara manual per siswa. Kalau syarat kelulusan berubah
+Siswa yang tidak memenuhi salah satu (atau keduanya) akan melihat satu kotak
+merah "Belum memenuhi syarat kelulusan" — tanpa merinci kriteria mana yang
+kurang — dan Anda tidak perlu mengetik status ini secara manual per siswa. Kalau syarat kelulusan berubah
 di semester berikutnya, ubah `KEHADIRAN_MIN`/`KUIS_MIN` di bagian atas
 [`app_pages/student.py`](app_pages/student.py).
 
 Angka syarat (75%/70%) sengaja **tidak** ditampilkan ke siswa — halaman siswa
-hanya menunjukkan persentase kuis/kehadiran milik mereka sendiri dan status
-"memenuhi"/"belum memenuhi syarat" tanpa menyebut angka minimalnya, supaya
-siswa tidak tahu persis ambang batasnya. Kalau menambah teks baru terkait status
+hanya menunjukkan persentase kuis/kehadiran milik mereka sendiri dan satu
+status akhir "memenuhi"/"belum memenuhi syarat" — tanpa angka minimal dan tanpa
+rincian per kriteria, supaya siswa tidak bisa menebak ambang batasnya. Kalau menambah teks baru terkait status
 kelulusan di [`lib/i18n.py`](lib/i18n.py), pastikan tidak menyisipkan
 `KEHADIRAN_MIN`/`KUIS_MIN` ke dalamnya.
 
