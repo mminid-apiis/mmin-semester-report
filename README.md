@@ -107,6 +107,18 @@ keduanya menulis ke spreadsheet yang sama.
   | `Total Persentase Kuis` | angka 0-100 (boleh diisi mis. `82` atau `82%`) |
   | `Total Persentase Kehadiran` | angka 0-100, persentase kehadiran Kelas Zoom |
   | `Catatan` | teks bebas dari wali kelas, opsional — boleh dikosongkan |
+  | `Minggu Tercatat` + `Total Minggu` | **opsional, harus ada keduanya** — bilangan bulat, mis. `16` dan `16`. Kalau ada, kartu siswa menampilkan "Berdasarkan 16 dari 16 minggu yang tercatat"; kalau salah satu kolom tidak ada atau selnya kosong/bukan angka, baris itu disembunyikan |
+
+  Kolom opsional ditambahkan dengan menambah header baru di baris pertama
+  Google Sheets (panel Admin hanya mengedit isi kolom yang sudah ada).
+
+  Kartu hasil siswa menampilkan: nama, email, kelas · semester, **status
+  keseluruhan** (satu label saja, tanpa angka syarat atau rincian per kriteria),
+  lalu **Rata-rata Kuis** dan **Rata-rata Kehadiran**. Angka persen tampil bulat
+  kalau tidak ada desimal, selain itu satu desimal yang **dipotong** (bukan
+  dibulatkan) supaya angka yang terlihat tidak pernah tampak lolos padahal belum.
+  Tampilannya ada di `lib/report_view.py` (HTML) dan `lib/branding.py` (CSS
+  `mm-*`).
 
   Siswa harus memasukkan **Kelas yang tepat** (supaya tab yang benar terbuka)
   ditambah **Email + Nomor HP** yang cocok persis dengan satu baris di tab itu

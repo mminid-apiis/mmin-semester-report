@@ -180,8 +180,10 @@ function seedWorld(world) {
     ['', '081234500099', 'Tanpa Email', 'MMin 2 Leadership', 70, 70, ''],
     ['bukan-email', '081234500098', 'Email Rusak', 'MMin 2 Leadership', 70, 70, ''],
   ], [1]);
-  world.addSheet('Semester 2 Pastoral', HEADERS, [
-    ['testtiga@example.com', '081234500003', 'Test Tiga', 'MMin 2 Pastoral', 65, 90, ''],
+  // Pastoral punya dua kolom opsional ("Minggu Tercatat", "Total Minggu") untuk menguji
+  // bahwa kolom tambahan ikut terbaca/tersimpan dan tidak merusak audit diff.
+  world.addSheet('Semester 2 Pastoral', [...HEADERS, 'Minggu Tercatat', 'Total Minggu'], [
+    ['testtiga@example.com', '081234500003', 'Test Tiga', 'MMin 2 Pastoral', 65, 90, '', 16, 16],
   ], [1]);
   return world;
 }

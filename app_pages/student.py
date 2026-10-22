@@ -3,6 +3,7 @@ import streamlit as st
 from lib.apps_script_client import AppsScriptError, call_apps_script
 from lib.constants import KELAS_OPTIONS
 from lib.i18n import render_language_switcher, t
+from lib.report_view import build_report_html
 
 ORG_TAGLINE = "21st Century Training. For Christians. For Free"
 
@@ -11,9 +12,14 @@ KEHADIRAN_MIN = 75
 KUIS_MIN = 70
 
 FIELD_NAMA = "nama"
+FIELD_EMAIL = "email"
 FIELD_KUIS = "total persentase kuis"
 FIELD_KEHADIRAN = "total persentase kehadiran"
 FIELD_CATATAN = "catatan"
+# Opsional: kalau kedua kolom ini ada di sheet, kartu menampilkan
+# "Berdasarkan X dari Y minggu yang tercatat"; kalau tidak, barisnya disembunyikan.
+FIELD_MINGGU_TERCATAT = "minggu tercatat"
+FIELD_TOTAL_MINGGU = "total minggu"
 
 
 @st.cache_data(ttl=300, show_spinner=False)
@@ -45,6 +51,17 @@ def parse_percentage(value) -> float | None:
         except ValueError:
             return None
     return num * 100 if 0 <= num <= 1 else num
+
+
+def parse_count(value) -> int | None:
+    """Bilangan bulat tak-negatif dari sel sheet (angka atau teks), selain itu None."""
+    if value is None or value == "":
+        return None
+    try:
+        num = float(str(value).strip().replace(",", "."))
+    except ValueError:
+        return None
+    return int(num) if num >= 0 and num == int(num) else None
 
 
 with st.container(key="hero"):
@@ -101,20 +118,38 @@ with st.container(key="card"):
         kehadiran = parse_percentage(data.get(FIELD_KEHADIRAN))
         catatan = data.get(FIELD_CATATAN)
 
-        st.success(t("success_found", nama=nama, kelas=kelas, semester=semester))
+        complete = kuis is not None and kehadiran is not None
+        passed = (kuis >= KUIS_MIN and kehadiran >= KEHADIRAN_MIN) if complete else None
 
-        col1, col2 = st.columns(2)
-        col1.metric(t("metric_kuis"), f"{kuis:.0f}%" if kuis is not None else "-")
-        col2.metric(t("metric_kehadiran"), f"{kehadiran:.0f}%" if kehadiran is not None else "-")
+        recorded = parse_count(data.get(FIELD_MINGGU_TERCATAT))
+        total = parse_count(data.get(FIELD_TOTAL_MINGGU))
+        weeks_text = (
+            t("report_weeks", recorded=recorded, total=total)
+            if complete and recorded is not None and total
+            else None
+        )
 
-        st.subheader(t("status_subheader"), icon=":material/verified:")
-        if kuis is None or kehadiran is None:
+        st.html(
+            build_report_html(
+                nama=str(nama or "-"),
+                email=str(data.get(FIELD_EMAIL) or email.strip()),
+                kelas=kelas,
+                semester=semester,
+                kuis=kuis,
+                kehadiran=kehadiran,
+                passed=passed,
+                weeks_text=weeks_text,
+                labels={
+                    "status_label": t("report_status_label"),
+                    "status_pass": t("report_status_pass"),
+                    "status_fail": t("report_status_fail"),
+                    "kuis": t("report_avg_kuis"),
+                    "kehadiran": t("report_avg_kehadiran"),
+                },
+            )
+        )
+        if not complete:
             st.warning(t("incomplete_data_warning"))
-        else:
-            if kuis >= KUIS_MIN and kehadiran >= KEHADIRAN_MIN:
-                st.success(t("status_pass", semester=semester), icon=":material/check_circle:")
-            else:
-                st.error(t("status_fail", semester=semester), icon=":material/cancel:")
 
         if catatan:
             st.subheader(t("catatan_subheader"), icon=":material/edit_note:")
