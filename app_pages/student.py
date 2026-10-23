@@ -111,35 +111,33 @@ with st.container(key="card"):
         st.session_state.pop(KEY_REPORT, None)
         if not email.strip() or not kelas or not phone.strip():
             st.warning(t("warning_incomplete"))
-            st.stop()
+        else:
+            result = None
+            with st.spinner(t("spinner_search")):
+                try:
+                    result = call_apps_script(
+                        "get_report",
+                        {
+                            "email": email.strip(),
+                            "kelas": kelas,
+                            "phone": phone.strip(),
+                        },
+                    )
+                except AppsScriptError as exc:
+                    st.error(t(exc.code))
 
-        with st.spinner(t("spinner_search")):
-            try:
-                result = call_apps_script(
-                    "get_report",
-                    {
-                        "email": email.strip(),
-                        "kelas": kelas,
-                        "phone": phone.strip(),
-                    },
-                )
-            except AppsScriptError as exc:
-                st.error(t(exc.code))
-                st.stop()
-
-        if not result.get("ok"):
-            st.error(t("error_not_found"))
-            st.stop()
-
-        # Hasil disimpan di sesi (bukan hanya dirender sekali) supaya tetap tampil
-        # saat halaman dijalankan ulang, mis. ganti bahasa. Teksnya dibangun ulang
-        # dari data ini di bawah, jadi ikut berganti bahasa.
-        st.session_state[KEY_REPORT] = {
-            "kelas": kelas,
-            "semester": result.get("semester", ""),
-            "data": result.get("data", {}),
-            "typed_email": email.strip(),
-        }
+            if result is not None and not result.get("ok"):
+                st.error(t("error_not_found"))
+            elif result is not None:
+                # Hasil disimpan di sesi (bukan hanya dirender sekali) supaya tetap
+                # tampil saat halaman dijalankan ulang, mis. ganti bahasa. Teksnya
+                # dibangun ulang dari data ini di bawah, jadi ikut berganti bahasa.
+                st.session_state[KEY_REPORT] = {
+                    "kelas": kelas,
+                    "semester": result.get("semester", ""),
+                    "data": result.get("data", {}),
+                    "typed_email": email.strip(),
+                }
 
     report = st.session_state.get(KEY_REPORT)
     if report:
@@ -189,6 +187,8 @@ with st.container(key="card"):
             st.write(catatan)
 
         st.button(t("lookup_another_button"), icon=":material/restart_alt:", on_click=reset_lookup)
+    else:
+        st.caption(f":material/help: {t('help_not_found')}")
 
 with st.container(key="footer"):
     st.caption("MMin Semester Report")

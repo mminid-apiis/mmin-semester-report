@@ -46,7 +46,9 @@ def build_report_html(
     weeks_text: str | None = None,
     note: str | None = None,
 ) -> str:
-    """`passed` None = data belum lengkap (status tidak ditampilkan).
+    """Urutan: identitas, dua kartu rata-rata, catatan, lalu status keseluruhan di bawah.
+
+    `passed` None = data belum lengkap (status tidak ditampilkan).
 
     Semua teks dari sheet di-escape; `labels` dan `weeks_text` sudah terjemahan
     dari lib/i18n.py (`labels`: status_label, status_pass, status_fail, kuis,
@@ -69,7 +71,7 @@ def build_report_html(
         status = (
             '<div class="mm-report__status">'
             f'<div class="mm-report__label">{esc(labels["status_label"])}</div>'
-            f'<span class="mm-pill {pill_class}">{esc(pill_text)}</span>'
+            f'<div class="mm-pill {pill_class}">{esc(pill_text)}</div>'
             f"{weeks}"
             "</div>"
         )
@@ -81,4 +83,4 @@ def build_report_html(
         + "</div>"
     )
     note_html = f'<div class="mm-report__note">{esc(note)}</div>' if note else ""
-    return f'<div class="mm-report"><div class="mm-report__top">{who}{status}</div>{tiles}{note_html}</div>'
+    return f'<div class="mm-report"><div class="mm-report__top">{who}</div>{tiles}{note_html}{status}</div>'

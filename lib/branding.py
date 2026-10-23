@@ -91,12 +91,6 @@ _BRAND_CSS = """
     border-top: 1px solid #e3e8ed;
     color: #1b2835;
 }
-.mm-report__top {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    align-items: start;
-    gap: 1.25rem 2rem;
-}
 .mm-report__name {
     font-size: clamp(1.7rem, 5vw, 2.25rem);
     font-weight: 700;
@@ -115,7 +109,7 @@ _BRAND_CSS = """
     margin-top: 0.2rem;
 }
 .mm-report__status {
-    text-align: left;
+    margin-top: 1.75rem;
 }
 .mm-report__label {
     font-size: 0.95rem;
@@ -124,17 +118,21 @@ _BRAND_CSS = """
     color: #5b6b7b;
 }
 .mm-pill {
-    display: inline-block;
+    display: flex;
+    align-items: flex-start;
     margin: 0.55rem 0 0.7rem;
-    padding: 0.55rem 1.2rem;
-    border-radius: 999px;
-    font-size: 1.25rem;
+    padding: 0.9rem 1.3rem;
+    border-radius: 14px;
+    font-size: clamp(1.1rem, 3.2vw, 1.3rem);
     font-weight: 700;
+    line-height: 1.4;
 }
 .mm-pill::before {
     content: "\\25CF";
-    margin-right: 0.55rem;
+    flex: none;
+    margin-right: 0.7rem;
     font-size: 0.9em;
+    line-height: 1.55;
 }
 .mm-pill--pass { background: #e3f4e1; color: #1c7a2c; }
 .mm-pill--fail { background: #fde8e8; color: #b3261e; }
@@ -194,10 +192,6 @@ _BRAND_CSS = """
 }
 .mm-bar--blue { background: #0b77ba; }
 .mm-bar--green { background: #7cb518; }
-@media (min-width: 900px) {
-    .mm-report__top { grid-template-columns: minmax(0, 1fr) auto; }
-    .mm-report__status { text-align: right; }
-}
 @media (max-width: 640px) {
     .st-key-card { padding: 1.5rem 1.1rem 1.25rem; }
 }
