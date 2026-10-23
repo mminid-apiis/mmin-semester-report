@@ -171,6 +171,7 @@ with st.container(key="card"):
                 kehadiran=kehadiran,
                 passed=passed,
                 weeks_text=weeks_text,
+                note=t("report_note"),
                 labels={
                     "status_label": t("report_status_label"),
                     "status_pass": t("report_status_pass"),

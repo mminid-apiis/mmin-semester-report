@@ -120,6 +120,12 @@ keduanya menulis ke spreadsheet yang sama.
   Tampilannya ada di `lib/report_view.py` (HTML) dan `lib/branding.py` (CSS
   `mm-*`).
 
+  Di bawah kedua kartu ada kotak catatan: "nilai ini adalah nilai akumulasi
+  dari Semester 1". Teksnya **tetap** (sama untuk semua siswa), disimpan sebagai
+  `report_note` di [`lib/i18n.py`](lib/i18n.py) — ubah di sana (tiga bahasa)
+  kalau semesternya berganti, atau hapus barisnya kalau catatan tidak
+  diperlukan lagi.
+
   Siswa harus memasukkan **Kelas yang tepat** (supaya tab yang benar terbuka)
   ditambah **Email + Nomor HP** yang cocok persis dengan satu baris di tab itu
   (email dicocokkan tanpa memandang huruf besar/kecil) untuk bisa melihat

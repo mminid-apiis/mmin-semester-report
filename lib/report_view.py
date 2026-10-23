@@ -44,6 +44,7 @@ def build_report_html(
     passed: bool | None,
     labels: dict[str, str],
     weeks_text: str | None = None,
+    note: str | None = None,
 ) -> str:
     """`passed` None = data belum lengkap (status tidak ditampilkan).
 
@@ -79,4 +80,5 @@ def build_report_html(
         + _tile(labels["kehadiran"], kehadiran, "mm-bar--green")
         + "</div>"
     )
-    return f'<div class="mm-report"><div class="mm-report__top">{who}{status}</div>{tiles}</div>'
+    note_html = f'<div class="mm-report__note">{esc(note)}</div>' if note else ""
+    return f'<div class="mm-report"><div class="mm-report__top">{who}{status}</div>{tiles}{note_html}</div>'

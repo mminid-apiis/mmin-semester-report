@@ -178,6 +178,20 @@ _BRAND_CSS = """
     overflow: hidden;
 }
 .mm-bar > i { display: block; height: 100%; border-radius: 999px; }
+.mm-report__note {
+    margin-top: 1.25rem;
+    padding: 0.9rem 1.15rem;
+    border-radius: 10px;
+    background: #eef5fb;
+    color: #35506a;
+    font-size: 1.05rem;
+    line-height: 1.5;
+}
+.mm-report__note::before {
+    content: "\\2139";
+    margin-right: 0.6rem;
+    font-weight: 700;
+}
 .mm-bar--blue { background: #0b77ba; }
 .mm-bar--green { background: #7cb518; }
 @media (min-width: 900px) {
