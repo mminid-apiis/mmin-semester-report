@@ -19,6 +19,14 @@ _BRAND_CSS = """
 [data-testid="stHeader"] svg {
     fill: #eef4fa !important;
 }
+/* Tombol "Fork"/GitHub (disuntikkan Streamlit Community Cloud) dan menu titik tiga
+   disembunyikan dari pengunjung. Sengaja TIDAK menyembunyikan stToolbar penuh
+   supaya navigasi atas tidak ikut hilang. */
+[data-testid="stToolbarActions"],
+[data-testid="stMainMenu"],
+[data-testid="stAppDeployButton"] {
+    display: none !important;
+}
 [data-testid="stTopNavLink"], [data-testid="stTopNavLink"] * {
     color: #9fb8ce !important;
 }
