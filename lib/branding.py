@@ -75,6 +75,11 @@ _BRAND_CSS = """
     margin-left: auto !important;
     margin-right: auto !important;
 }
+/* Logo tidak perlu tombol "Fullscreen" bawaan st.image (hasilnya layar putih kosong
+   karena logo transparan). Hanya di hero; tabel di panel admin tetap punya toolbar. */
+.st-key-hero [data-testid="stElementToolbar"] {
+    display: none !important;
+}
 .st-key-hero img {
     display: block !important;
     width: 420px !important;
