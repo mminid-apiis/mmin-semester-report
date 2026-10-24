@@ -3,6 +3,8 @@ gradasi navy gelap di latar, kartu putih membulat untuk konten utama. Tidak
 ada lagi toggle terang/gelap -- ini satu-satunya tampilan aplikasi.
 """
 
+import base64
+
 import streamlit as st
 
 _BRAND_CSS = """
@@ -213,5 +215,118 @@ _BRAND_CSS = """
 """
 
 
+# Bendera di knop tombol bahasa (SVG kecil, di-embed sebagai data URI).
+_UK_FLAG_SVG = (
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 30">'
+    '<clipPath id="s"><path d="M0,0 v30 h60 v-30 z"/></clipPath>'
+    '<clipPath id="t"><path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z"/></clipPath>'
+    '<g clip-path="url(#s)"><path d="M0,0 v30 h60 v-30 z" fill="#012169"/>'
+    '<path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/>'
+    '<path d="M0,0 L60,30 M60,0 L0,30" clip-path="url(#t)" stroke="#C8102E" stroke-width="4"/>'
+    '<path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/>'
+    '<path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/></g></svg>'
+)
+_ID_FLAG_SVG = (
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3 2">'
+    '<rect width="3" height="1" fill="#E70011"/><rect y="1" width="3" height="1" fill="#fff"/></svg>'
+)
+
+
+def _data_uri(svg: str) -> str:
+    return "data:image/svg+xml;base64," + base64.b64encode(svg.encode("utf-8")).decode("ascii")
+
+
+# Tombol geser bahasa EN | ID di pojok kanan atas (dirender app.py lewat
+# render_language_switcher()). st.toggle bawaan ditata ulang: kiri (mati) = English,
+# kanan (hidup) = Indonesia; knopnya menampilkan bendera bahasa yang aktif.
+_LANG_TOGGLE_CSS = """
+<style>
+.st-key-langswitch {
+    position: fixed;
+    top: 0.55rem;
+    right: 1rem;
+    z-index: 1000002;
+    width: auto !important;
+}
+.st-key-langswitch [data-testid="stElementContainer"] {
+    width: auto !important;
+}
+.st-key-langswitch label {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    width: auto !important;
+    padding: 0.32rem 0.9rem;
+    border-radius: 999px;
+    background: #eef1f5;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.28), inset 0 1px 1px rgba(255, 255, 255, 0.9);
+    cursor: pointer;
+}
+.st-key-langswitch label > span {
+    position: absolute;
+    opacity: 0;
+}
+.st-key-langswitch label [data-testid="stWidgetLabel"] {
+    display: none;
+}
+.st-key-langswitch label::before,
+.st-key-langswitch label::after {
+    font-size: 0.95rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: #aeb7c2;
+    transition: color 0.15s;
+}
+.st-key-langswitch label::before { content: "EN"; }
+.st-key-langswitch label::after { content: "ID"; }
+.st-key-langswitch label:not(:has(input:checked))::before { color: #2f3d4e; }
+.st-key-langswitch label:has(input:checked)::after { color: #2f3d4e; }
+.st-key-langswitch label > div:not([data-testid]) {
+    position: relative !important;
+    flex: none;
+    width: 62px !important;
+    height: 30px !important;
+    margin: 0 !important;
+    border-radius: 999px !important;
+    background: #dde2e8 !important;
+    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.2), inset 0 -1px 2px rgba(255, 255, 255, 0.7) !important;
+}
+.st-key-langswitch label > div:not([data-testid]) > div {
+    position: absolute !important;
+    top: 2px !important;
+    left: 3px !important;
+    width: 26px !important;
+    height: 26px !important;
+    margin: 0 !important;
+    box-sizing: border-box;
+    border: 2px solid #ffffff;
+    border-radius: 50% !important;
+    transform: none !important;
+    background: url("__UK_FLAG__") center / cover no-repeat !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+    transition: left 0.2s ease !important;
+}
+.st-key-langswitch label:has(input:checked) > div:not([data-testid]) > div {
+    left: calc(100% - 29px) !important;
+    background-image: url("__ID_FLAG__") !important;
+}
+.st-key-langswitch label:has(input:focus-visible) {
+    outline: 2px solid #1690d0;
+    outline-offset: 3px;
+}
+@media (max-width: 640px) {
+    .st-key-langswitch { top: 0.5rem; right: 0.6rem; }
+    .st-key-langswitch label { gap: 0.45rem; padding: 0.28rem 0.65rem; }
+    .st-key-langswitch label::before,
+    .st-key-langswitch label::after { font-size: 0.8rem; }
+}
+</style>
+"""
+
+
 def apply_branding():
-    st.markdown(_BRAND_CSS, unsafe_allow_html=True)
+    toggle_css = _LANG_TOGGLE_CSS.replace("__UK_FLAG__", _data_uri(_UK_FLAG_SVG)).replace(
+        "__ID_FLAG__", _data_uri(_ID_FLAG_SVG)
+    )
+    st.markdown(_BRAND_CSS + toggle_css, unsafe_allow_html=True)

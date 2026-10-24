@@ -13,15 +13,18 @@ Cloud.
 
 ## Bahasa & tampilan
 
-Siswa maupun admin bisa mengganti **bahasa** (Indonesia / English / 中文) lewat
-tombol segmented (🇮🇩/🇬🇧/🇨🇳) di atas halaman — tersedia di halaman Laporan
-Semester **dan** halaman Admin (termasuk sebelum login), pilihan ini tersimpan
-selama sesi browser mereka. Semua teks antarmuka (label, pesan error, status
-kelulusan, seluruh isi panel admin) ikut berubah bahasa; untuk menambah/
-mengubah teks lihat [`lib/i18n.py`](lib/i18n.py) (satu dict per bahasa, key
-harus sama persis di ketiganya) — widget selector-nya sendiri ada di fungsi
-`render_language_switcher()` dalam file yang sama, dipakai bersama oleh kedua
-halaman. Kolom **Catatan** yang Anda isi sendiri di Google Sheets **tidak**
+Siswa maupun admin bisa mengganti **bahasa** (Indonesia / English) lewat satu
+**tombol geser EN | ID** di pojok kanan atas (knopnya menampilkan bendera
+bahasa yang aktif) — tersedia di semua halaman, termasuk halaman Admin sebelum
+login; pilihan ini tersimpan selama sesi browser mereka dan ikut terbawa saat
+pindah halaman. Semua teks antarmuka (label, pesan error, status kelulusan,
+seluruh isi panel admin) ikut berubah bahasa; untuk menambah/mengubah teks
+lihat [`lib/i18n.py`](lib/i18n.py) (satu dict per bahasa, key harus sama persis
+di semuanya). Tombolnya dirender sekali dari `app.py` lewat
+`render_language_switcher()`, dan tampilannya (posisi, bendera) diatur di
+`lib/branding.py` (`.st-key-langswitch`). Terjemahan **中文 (zh)** masih
+tersimpan di `lib/i18n.py` tetapi belum ada pilihannya di tombol (tombol geser
+hanya punya dua posisi). Kolom **Catatan** yang Anda isi sendiri di Google Sheets **tidak**
 ikut diterjemahkan otomatis — akan tampil apa adanya dalam bahasa yang Anda
 ketik. Nama kolom asli dari Google Sheets (`Email`, `Nomor HP`, `Nama`,
 `Kelas`, dst.) di tabel edit panel admin juga sengaja **tidak** diterjemahkan,

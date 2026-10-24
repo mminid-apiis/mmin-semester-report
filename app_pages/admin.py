@@ -7,7 +7,7 @@ import streamlit as st
 from lib import admin_auth
 from lib.apps_script_client import AppsScriptError, call_apps_script
 from lib.constants import KELAS_OPTIONS
-from lib.i18n import get_lang, render_language_switcher, t
+from lib.i18n import get_lang, t
 
 NOTIFY_JENIS = ["baru", "pengingat"]
 DEFAULT_NOTIFY_BATCH = 30
@@ -21,7 +21,6 @@ def action_label(code: str) -> str:
 def show_login():
     accounts = admin_auth.get_accounts()
     with st.container(key="card"):
-        render_language_switcher()
         st.subheader(t("admin_login_title"), icon=":material/lock:")
         if not accounts:
             st.error(t("admin_no_accounts"))
@@ -551,8 +550,6 @@ if admin_user is None:
     st.stop()
 
 with st.container(key="card"):
-    render_language_switcher()
-
     if st.session_state.pop("admin_log_warning", False):
         st.warning(t("admin_log_warning"))
 

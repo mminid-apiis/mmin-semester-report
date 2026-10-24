@@ -2,7 +2,7 @@ import streamlit as st
 
 from lib.apps_script_client import AppsScriptError, call_apps_script
 from lib.constants import KELAS_OPTIONS
-from lib.i18n import render_language_switcher, t
+from lib.i18n import t
 from lib.report_view import build_report_html
 
 ORG_TAGLINE = "21st Century Training. For Christians. For Free"
@@ -83,8 +83,6 @@ with st.container(key="hero"):
     st.title(t("app_title"))
 
 with st.container(key="card"):
-    render_language_switcher()
-
     st.caption(t("intro_caption"))
 
     semesters = load_semesters()

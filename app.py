@@ -1,7 +1,7 @@
 import streamlit as st
 
 from lib.branding import apply_branding
-from lib.i18n import t
+from lib.i18n import render_language_switcher, t
 
 st.set_page_config(
     page_title="MMin Semester Report",
@@ -9,6 +9,7 @@ st.set_page_config(
     layout="wide",
 )
 apply_branding()
+render_language_switcher()
 
 page = st.navigation(
     [

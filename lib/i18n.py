@@ -1,11 +1,7 @@
 import streamlit as st
 
-LANGUAGES = {
-    "id": "🇮🇩 Indonesia",
-    "en": "🇬🇧 English",
-    "zh": "🇨🇳 中文",
-}
-
+# Terjemahan "zh" (Mandarin) sengaja tetap disimpan walau tombol bahasa kini hanya
+# memilih antara Indonesia dan English, supaya mudah dihidupkan lagi.
 _TRANSLATIONS = {
     "id": {
         "app_title": "Laporan Semester MMin",
@@ -564,7 +560,8 @@ _TRANSLATIONS = {
 
 
 def get_lang() -> str:
-    return st.session_state.get("lang") or "id"
+    lang = st.session_state.get("lang")
+    return lang if lang in _TRANSLATIONS else "id"
 
 
 def t(key: str, **kwargs) -> str:
@@ -572,15 +569,19 @@ def t(key: str, **kwargs) -> str:
     return text.format(**kwargs) if kwargs else text
 
 
+def _on_lang_toggle():
+    st.session_state["lang"] = "id" if st.session_state["lang_toggle"] else "en"
+
+
 def render_language_switcher():
-    """Tombol segmented ID/EN/ZH -- dipakai di halaman siswa maupun admin."""
-    codes = list(LANGUAGES.keys())
-    st.segmented_control(
-        t("lang_label"),
-        options=codes,
-        format_func=lambda code: LANGUAGES[code],
-        default=get_lang(),
-        required=True,
-        key="lang",
-        label_visibility="collapsed",
-    )
+    """Satu tombol geser EN | ID di pojok kanan atas (tata letak & bendera ada di
+    lib/branding.py, kelas `.st-key-langswitch`). Posisi kiri = English (mati),
+    kanan = Indonesia (hidup). Dipanggil sekali dari app.py untuk semua halaman."""
+    st.session_state["lang_toggle"] = get_lang() == "id"
+    with st.container(key="langswitch"):
+        st.toggle(
+            t("lang_label"),
+            key="lang_toggle",
+            on_change=_on_lang_toggle,
+            label_visibility="collapsed",
+        )
