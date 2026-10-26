@@ -24,6 +24,7 @@ var COLUMN_KELAS = 'kelas';
 var COLUMN_PHONE = 'nomor hp';
 var COLUMN_EMAIL = 'email';
 var COLUMN_NAMA = 'nama';
+var COLUMN_KUIS = 'total persentase kuis';
 
 // Tab log akses siswa -- satu tab per kelas, dibuat otomatis saat pertama
 // kali dibutuhkan (mis. "_AccessLog_Leadership", "_AccessLog_Pastoral").
@@ -216,11 +217,67 @@ function getReport(kelas, phone, email) {
       }
       var semesterLabel = displaySemesterLabel(sheet.getName(), kelas);
       logAccess(kelas, semesterLabel, namaIdx !== -1 ? row[namaIdx] : '', email);
-      return { ok: true, semester: semesterLabel, data: data };
+      var rank = computeQuizRank(values, headers, r, targetKelas);
+      return { ok: true, semester: semesterLabel, data: data, rank: rank };
     }
   }
 
   return { ok: false, message: 'Data tidak ditemukan.' };
+}
+
+/**
+ * Sama dengan parse_percentage() di app_pages/student.py: angka biasa (75),
+ * teks ("75%"), atau pecahan hasil format Percent di Sheets (0.75) -> skala 0-100.
+ * Hasilnya dibulatkan 2 desimal supaya nilai yang sama selalu dianggap seri.
+ */
+function parsePercentage(value) {
+  if (value === null || value === undefined || value === '') return null;
+  var num;
+  if (typeof value === 'number') {
+    num = value;
+  } else {
+    var text = String(value).trim().replace('%', '').replace(',', '.');
+    if (!text) return null;
+    num = Number(text);
+    if (isNaN(num)) return null;
+  }
+  if (num >= 0 && num <= 1) num = num * 100;
+  return Math.round(num * 100) / 100;
+}
+
+/**
+ * Peringkat siswa (baris `myRow`) di kelasnya berdasarkan Total Persentase Kuis.
+ * Dihitung di sini (bukan di Streamlit) supaya nilai siswa lain tidak pernah
+ * dikirim ke browser -- yang keluar hanya {position, total}.
+ *  - Yang dihitung: baris yang punya Nama atau Email dan punya nilai kuis angka,
+ *    dan (kalau kolom Kelas ada) Kelas-nya sama dengan kelas yang dipilih.
+ *  - Seri berbagi peringkat yang sama (1, 2, 2, 4): peringkat = 1 + jumlah siswa
+ *    yang nilainya LEBIH tinggi.
+ *  - Mengembalikan null kalau kolom kuis tidak ada atau nilai kuis siswa ini kosong.
+ */
+function computeQuizRank(values, headers, myRow, targetKelas) {
+  var kuisIdx = findColumn(headers, COLUMN_KUIS);
+  if (kuisIdx === -1) return null;
+  var mine = parsePercentage(values[myRow][kuisIdx]);
+  if (mine === null) return null;
+
+  var emailIdx = findColumn(headers, COLUMN_EMAIL);
+  var namaIdx = findColumn(headers, COLUMN_NAMA);
+  var kelasIdx = findColumn(headers, COLUMN_KELAS);
+
+  var total = 0;
+  var higher = 0;
+  for (var r = 1; r < values.length; r++) {
+    var hasIdentity = (emailIdx !== -1 && cellText(values[r][emailIdx]) !== '') ||
+                      (namaIdx !== -1 && cellText(values[r][namaIdx]) !== '');
+    if (!hasIdentity) continue;
+    if (kelasIdx !== -1 && cellText(values[r][kelasIdx]).toLowerCase() !== targetKelas) continue;
+    var score = parsePercentage(values[r][kuisIdx]);
+    if (score === null) continue;
+    total++;
+    if (score > mine) higher++;
+  }
+  return { position: higher + 1, total: total };
 }
 
 /**

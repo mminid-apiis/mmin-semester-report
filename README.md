@@ -116,13 +116,14 @@ keduanya menulis ke spreadsheet yang sama.
   Google Sheets (panel Admin hanya mengedit isi kolom yang sudah ada).
 
   Kartu hasil siswa menampilkan, berurutan dari atas: nama, email, kelas ·
-  semester; **Rata-rata Kuis** dan **Rata-rata Kehadiran**; kotak catatan; lalu
-  di paling bawah **status keseluruhan** — satu kotak hijau/merah berbunyi
-  "ANDA (TIDAK) MEMENUHI SYARAT UNTUK MELANJUTKAN DI SEMESTER 3", tanpa angka
-  syarat dan tanpa rincian per kriteria (teks "Semester 3" ini tetap, ada di
-  `report_status_pass`/`report_status_fail` di `lib/i18n.py`). Angka persen tampil bulat
-  kalau tidak ada desimal, selain itu satu desimal yang **dipotong** (bukan
-  dibulatkan) supaya angka yang terlihat tidak pernah tampak lolos padahal belum.
+  semester; **Rata-rata Kuis** dan **Rata-rata Kehadiran**; **peringkat di
+  kelas**; kotak catatan; lalu di paling bawah **status keseluruhan** dalam
+  tiga warna (aturannya di bagian "Status kelulusan" di bawah), tanpa angka
+  syarat dan tanpa rincian per kriteria. Kalimat status ("Semester 3" dst.)
+  tetap, ada di `report_status_*` / `report_warn_notice` di `lib/i18n.py`.
+  Angka persen tampil bulat kalau tidak ada desimal, selain itu satu desimal
+  yang **dipotong** (bukan dibulatkan) supaya angka yang terlihat tidak pernah
+  tampak lolos padahal belum.
   Tampilannya ada di `lib/report_view.py` (HTML) dan `lib/branding.py` (CSS
   `mm-*`).
 
@@ -150,25 +151,40 @@ keduanya menulis ke spreadsheet yang sama.
 
 ### Status kelulusan dihitung otomatis
 
-Aplikasi **tidak** membaca status lulus/tidak dari kolom manapun di sheet — status
-dihitung otomatis dari `Total Persentase Kuis` dan `Total Persentase Kehadiran`
-memakai syarat tetap:
+Aplikasi **tidak** membaca status dari kolom manapun di sheet — status dihitung
+otomatis dari `Total Persentase Kuis` dan `Total Persentase Kehadiran` dengan
+aturan di [`lib/grading.py`](lib/grading.py) (satu-satunya tempat angkanya
+ditulis; ada uji batasnya di `tests/test_grading.py`):
 
-- Kehadiran Kelas Zoom minimal **75%**
-- Total nilai kuis minimal **70%**
+| Warna | Kondisi | Yang dibaca siswa |
+|---|---|---|
+| Hijau | kuis **≥ 70%** dan kehadiran **≥ 75%** | ANDA MEMENUHI SYARAT UNTUK MELANJUTKAN DI SEMESTER 3 |
+| Kuning | selain hijau, tapi kuis dan kehadiran keduanya **≥ 50%** | ANDA LULUS SEMESTER 2 DENGAN SYARAT, plus pemberitahuan: jika nilai tidak naik di Semester 3, tidak diizinkan melanjutkan ke Semester 4 |
+| Merah | kuis **atau** kehadiran **< 50%** | ANDA TIDAK MEMENUHI SYARAT UNTUK MELANJUTKAN DI SEMESTER 3 |
 
-Siswa yang tidak memenuhi salah satu (atau keduanya) akan melihat satu kotak
-merah "Belum memenuhi syarat kelulusan" — tanpa merinci kriteria mana yang
-kurang — dan Anda tidak perlu mengetik status ini secara manual per siswa. Kalau syarat kelulusan berubah
-di semester berikutnya, ubah `KEHADIRAN_MIN`/`KUIS_MIN` di bagian atas
-[`app_pages/student.py`](app_pages/student.py).
+Catatan penting soal aturan: kehadiran **70–75%** otomatis masuk **kuning** (bukan
+merah, bukan hijau), karena batas hijau kehadiran tetap 75%. Kalau yang
+dimaksud batas hijaunya 70%, ubah `KEHADIRAN_MIN` di `lib/grading.py`. Data yang
+belum lengkap (kuis atau kehadiran kosong) tidak menampilkan status sama sekali.
 
-Angka syarat (75%/70%) sengaja **tidak** ditampilkan ke siswa — halaman siswa
-hanya menunjukkan persentase kuis/kehadiran milik mereka sendiri dan satu
-status akhir "memenuhi"/"belum memenuhi syarat" — tanpa angka minimal dan tanpa
-rincian per kriteria, supaya siswa tidak bisa menebak ambang batasnya. Kalau menambah teks baru terkait status
-kelulusan di [`lib/i18n.py`](lib/i18n.py), pastikan tidak menyisipkan
-`KEHADIRAN_MIN`/`KUIS_MIN` ke dalamnya.
+Angka-angka itu sengaja **tidak** ditampilkan ke siswa — hanya satu dari tiga
+pesan di atas, tanpa angka minimal dan tanpa rincian per kriteria, supaya siswa
+tidak bisa menebak ambang batasnya. Kalau menambah teks baru terkait status di
+[`lib/i18n.py`](lib/i18n.py), jangan menyisipkan angka dari `lib/grading.py`.
+
+### Peringkat di kelas
+
+Peringkat dihitung **di Apps Script** (bukan di aplikasi) dari `Total Persentase
+Kuis` semua siswa pada tab kelas yang sama, supaya nilai siswa lain tidak pernah
+terkirim ke browser — yang keluar hanya `{peringkat, jumlah siswa}`. Aturannya:
+
+- Yang dihitung: baris yang punya Nama atau Email **dan** nilai kuis berupa angka
+  (dan, kalau kolom `Kelas` ada, Kelas-nya sama dengan kelas yang dipilih).
+- Nilai sama berbagi peringkat yang sama (1, 2, 2, 4).
+- Siswa tanpa nilai kuis tidak mendapat peringkat dan tidak ikut dihitung di
+  "dari … siswa".
+- Fitur ini butuh `Code.gs` versi terbaru di-deploy; dengan Code.gs lama, kartu
+  siswa tetap tampil normal hanya tanpa baris peringkat.
 
 **Soal format persen:** kalau kolom `Total Persentase Kuis`/`Total Persentase
 Kehadiran` di-format sebagai "Percent" oleh Google Sheets, nilainya akan terbaca

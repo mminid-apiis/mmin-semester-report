@@ -278,5 +278,47 @@ section('log tabs are invisible to the student side');
   ok(w.ss.getSheets().slice(-2).every(s => s.name.startsWith('_')), 'new log tabs created at the end');
 }
 
+section('class rank by quiz percentage');
+{
+  const rank = (w, email, phone, kelas = 'MMin 2 Leadership') => w.call('get_report', { kelas, email, phone });
+  const w = fresh();
+  // Seed Leadership: testsatu 88, testdua 82, testlima 90, "Tanpa Email" 70, "Email Rusak" 70  (5 siswa bernilai)
+  let r = rank(w, 'testlima@example.com', '081234500005');
+  eq(r.rank, { position: 1, total: 5 }, 'highest quiz = rank 1 of 5');
+  eq(rank(w, 'testsatu@example.com', '081234500001').rank, { position: 2, total: 5 }, '88 -> rank 2');
+  eq(rank(w, 'testdua@example.com', '081234500002').rank, { position: 3, total: 5 }, '82 -> rank 3');
+  eq(Object.keys(r.rank), ['position', 'total'], 'only position+total are exposed');
+  ok(!JSON.stringify(r).includes('Test Satu') && !JSON.stringify(r).includes('testsatu'), "no other student's data in the response");
+  eq(rank(w, 'testtiga@example.com', '081234500003', 'MMin 2 Pastoral').rank, { position: 1, total: 1 }, 'single student class = 1 of 1');
+
+  // ties share the rank (1,2,2,4) and the pool grows
+  const sh = w.ss.getSheetByName('Semester 2 Leadership');
+  sh.getRange(7, 1, 1, 7).setValues([['kembar@example.com', '081299900001', 'Kembar', 'MMin 2 Leadership', 88, 80, '']]);
+  eq(rank(w, 'testsatu@example.com', '081234500001').rank, { position: 2, total: 6 }, 'tie at 88: rank 2 of 6');
+  eq(rank(w, 'kembar@example.com', '081299900001').rank, { position: 2, total: 6 }, 'tied student shares rank 2');
+  eq(rank(w, 'testdua@example.com', '081234500002').rank, { position: 4, total: 6 }, 'after a 2-way tie the next rank is 4');
+
+  // percent formats count the same as plain numbers
+  sh.getRange(3, 5).setValues([['82%']]);
+  sh.getRange(7, 5).setValues([[0.88]]);
+  eq(rank(w, 'testdua@example.com', '081234500002').rank, { position: 4, total: 6 }, '"82%" parsed as 82');
+  eq(rank(w, 'kembar@example.com', '081299900001').rank, { position: 2, total: 6 }, '0.88 parsed as 88 (still ties with 88)');
+
+  // another class's row pasted into this tab is not counted
+  sh.getRange(8, 1, 1, 7).setValues([['intruder@example.com', '081299900002', 'Intruder', 'MMin 2 Pastoral', 99, 99, '']]);
+  eq(rank(w, 'testlima@example.com', '081234500005').rank, { position: 1, total: 6 }, 'row with another Kelas is excluded');
+
+  // blank quiz: no rank for that student, and they are not in anyone's total
+  sh.getRange(3, 5).setValues([['']]);
+  r = rank(w, 'testdua@example.com', '081234500002');
+  ok(r.ok && r.rank === null && r.data.Nama === 'Test Dua', 'blank quiz -> rank null but report still returned');
+  eq(rank(w, 'testlima@example.com', '081234500005').rank, { position: 1, total: 5 }, 'blank quiz is excluded from total');
+
+  // helpers
+  eq(w.ctx.computeQuizRank([['Email', 'Nama'], ['a@b.c', 'A']], ['Email', 'Nama'], 1, 'k'), null, 'missing quiz column -> null');
+  eq(w.ctx.parsePercentage('abc'), null, 'garbage -> null');
+  eq(w.ctx.parsePercentage('75,5%'), 75.5, 'comma decimal + percent sign');
+}
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

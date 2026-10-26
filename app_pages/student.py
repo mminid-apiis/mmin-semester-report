@@ -2,14 +2,11 @@ import streamlit as st
 
 from lib.apps_script_client import AppsScriptError, call_apps_script
 from lib.constants import KELAS_OPTIONS
+from lib.grading import classify
 from lib.i18n import t
 from lib.report_view import build_report_html
 
 ORG_TAGLINE = "21st Century Training. For Christians. For Free"
-
-# Syarat kelulusan semester — satu-satunya tempat angka ini didefinisikan.
-KEHADIRAN_MIN = 75
-KUIS_MIN = 70
 
 KEY_EMAIL = "lookup_email"
 KEY_KELAS = "lookup_kelas"
@@ -135,6 +132,7 @@ with st.container(key="card"):
                     "semester": result.get("semester", ""),
                     "data": result.get("data", {}),
                     "typed_email": email.strip(),
+                    "rank": result.get("rank"),
                 }
 
     report = st.session_state.get(KEY_REPORT)
@@ -147,7 +145,7 @@ with st.container(key="card"):
         catatan = data.get(FIELD_CATATAN)
 
         complete = kuis is not None and kehadiran is not None
-        passed = (kuis >= KUIS_MIN and kehadiran >= KEHADIRAN_MIN) if complete else None
+        status = classify(kuis, kehadiran)
 
         recorded = parse_count(data.get(FIELD_MINGGU_TERCATAT))
         total = parse_count(data.get(FIELD_TOTAL_MINGGU))
@@ -157,6 +155,13 @@ with st.container(key="card"):
             else None
         )
 
+        rank_info = report.get("rank")
+        rank = None
+        if isinstance(rank_info, dict):
+            position, total_students = parse_count(rank_info.get("position")), parse_count(rank_info.get("total"))
+            if position and total_students and position <= total_students:
+                rank = (position, total_students)
+
         st.html(
             build_report_html(
                 nama=str(nama or "-"),
@@ -165,15 +170,19 @@ with st.container(key="card"):
                 semester=semester,
                 kuis=kuis,
                 kehadiran=kehadiran,
-                passed=passed,
+                status=status,
                 weeks_text=weeks_text,
                 note=t("report_note"),
+                rank=rank,
                 labels={
                     "status_label": t("report_status_label"),
                     "status_pass": t("report_status_pass"),
+                    "status_warn": t("report_status_warn"),
                     "status_fail": t("report_status_fail"),
+                    "warn_notice": t("report_warn_notice"),
                     "kuis": t("report_avg_kuis"),
                     "kehadiran": t("report_avg_kehadiran"),
+                    "rank": t("report_rank"),
                 },
             )
         )

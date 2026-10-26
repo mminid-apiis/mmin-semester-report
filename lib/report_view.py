@@ -41,18 +41,20 @@ def build_report_html(
     semester: str,
     kuis: float | None,
     kehadiran: float | None,
-    passed: bool | None,
+    status: str | None,
     labels: dict[str, str],
     weeks_text: str | None = None,
     note: str | None = None,
+    rank: tuple[int, int] | None = None,
 ) -> str:
     """Urutan: identitas, dua kartu rata-rata, catatan, lalu status keseluruhan di bawah.
 
-    `passed` None = data belum lengkap (status tidak ditampilkan).
+    `status`: "pass" | "warn" | "fail" (lib/grading.py), None = data belum lengkap
+    (status tidak ditampilkan).
 
     Semua teks dari sheet di-escape; `labels` dan `weeks_text` sudah terjemahan
-    dari lib/i18n.py (`labels`: status_label, status_pass, status_fail, kuis,
-    kehadiran).
+    dari lib/i18n.py (`labels`: status_label, status_pass, status_warn,
+    status_fail, warn_notice, kuis, kehadiran, rank). `rank` = (peringkat, jumlah siswa) atau None.
     """
     esc = html.escape
     who = (
@@ -63,16 +65,19 @@ def build_report_html(
         "</div>"
     )
 
-    status = ""
-    if passed is not None:
-        pill_class = "mm-pill--pass" if passed else "mm-pill--fail"
-        pill_text = labels["status_pass"] if passed else labels["status_fail"]
+    status_html = ""
+    if status is not None:
+        pill_class = {"pass": "mm-pill--pass", "warn": "mm-pill--warn"}.get(status, "mm-pill--fail")
+        pill_text = labels.get(f"status_{status}", labels["status_fail"])
+        notice = ""
+        if status == "warn" and labels.get("warn_notice"):
+            notice = f'<div class="mm-report__warnnote">{esc(labels["warn_notice"])}</div>'
         weeks = f'<div class="mm-report__weeks">{esc(weeks_text)}</div>' if weeks_text else ""
-        status = (
+        status_html = (
             '<div class="mm-report__status">'
             f'<div class="mm-report__label">{esc(labels["status_label"])}</div>'
             f'<div class="mm-pill {pill_class}">{esc(pill_text)}</div>'
-            f"{weeks}"
+            f"{notice}{weeks}"
             "</div>"
         )
 
@@ -83,4 +88,13 @@ def build_report_html(
         + "</div>"
     )
     note_html = f'<div class="mm-report__note">{esc(note)}</div>' if note else ""
-    return f'<div class="mm-report"><div class="mm-report__top">{who}</div>{tiles}{note_html}{status}</div>'
+    rank_html = ""
+    if rank and labels.get("rank"):
+        position, total = rank
+        rank_text = (
+            esc(labels["rank"])
+            .replace("{position}", f"<strong>{int(position)}</strong>")
+            .replace("{total}", f"<strong>{int(total)}</strong>")
+        )
+        rank_html = f'<div class="mm-report__rank">{rank_text}</div>'
+    return f'<div class="mm-report"><div class="mm-report__top">{who}</div>{tiles}{rank_html}{note_html}{status_html}</div>'
