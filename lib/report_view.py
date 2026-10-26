@@ -54,7 +54,7 @@ def build_report_html(
 
     Semua teks dari sheet di-escape; `labels` dan `weeks_text` sudah terjemahan
     dari lib/i18n.py (`labels`: status_label, status_pass, status_warn,
-    status_fail, warn_notice, kuis, kehadiran, rank). `rank` = (peringkat, jumlah siswa) atau None.
+    status_fail, kuis, kehadiran, rank). `rank` = (peringkat, jumlah siswa) atau None.
     """
     esc = html.escape
     who = (
@@ -69,15 +69,12 @@ def build_report_html(
     if status is not None:
         pill_class = {"pass": "mm-pill--pass", "warn": "mm-pill--warn"}.get(status, "mm-pill--fail")
         pill_text = labels.get(f"status_{status}", labels["status_fail"])
-        notice = ""
-        if status == "warn" and labels.get("warn_notice"):
-            notice = f'<div class="mm-report__warnnote">{esc(labels["warn_notice"])}</div>'
         weeks = f'<div class="mm-report__weeks">{esc(weeks_text)}</div>' if weeks_text else ""
         status_html = (
             '<div class="mm-report__status">'
             f'<div class="mm-report__label">{esc(labels["status_label"])}</div>'
             f'<div class="mm-pill {pill_class}">{esc(pill_text)}</div>'
-            f"{notice}{weeks}"
+            f"{weeks}"
             "</div>"
         )
 

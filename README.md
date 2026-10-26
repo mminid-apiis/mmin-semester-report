@@ -120,7 +120,7 @@ keduanya menulis ke spreadsheet yang sama.
   kelas**; kotak catatan; lalu di paling bawah **status keseluruhan** dalam
   tiga warna (aturannya di bagian "Status kelulusan" di bawah), tanpa angka
   syarat dan tanpa rincian per kriteria. Kalimat status ("Semester 3" dst.)
-  tetap, ada di `report_status_*` / `report_warn_notice` di `lib/i18n.py`.
+  tetap, ada di `report_status_*` di `lib/i18n.py`.
   Angka persen tampil bulat kalau tidak ada desimal, selain itu satu desimal
   yang **dipotong** (bukan dibulatkan) supaya angka yang terlihat tidak pernah
   tampak lolos padahal belum.
@@ -159,7 +159,7 @@ ditulis; ada uji batasnya di `tests/test_grading.py`):
 | Warna | Kondisi | Yang dibaca siswa |
 |---|---|---|
 | Hijau | kuis **≥ 70%** dan kehadiran **≥ 75%** | ANDA MEMENUHI SYARAT UNTUK MELANJUTKAN DI SEMESTER 3 |
-| Kuning | selain hijau, tapi kuis dan kehadiran keduanya **≥ 50%** | ANDA LULUS SEMESTER 2 DENGAN SYARAT, plus pemberitahuan: jika nilai tidak naik di Semester 3, tidak diizinkan melanjutkan ke Semester 4 |
+| Kuning | selain hijau, tapi kuis dan kehadiran keduanya **≥ 50%** | Lulus bersyarat: Diharapkan ada peningkatan secara signifikan di semester 3. |
 | Merah | kuis **atau** kehadiran **< 50%** | ANDA TIDAK MEMENUHI SYARAT UNTUK MELANJUTKAN DI SEMESTER 3 |
 
 Catatan penting soal aturan: kehadiran **70–75%** otomatis masuk **kuning** (bukan

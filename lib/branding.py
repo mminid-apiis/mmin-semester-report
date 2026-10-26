@@ -152,17 +152,6 @@ _BRAND_CSS = """
 .mm-pill--pass { background: #e3f4e1; color: #1c7a2c; }
 .mm-pill--warn { background: #fff3c4; color: #7a5200; }
 .mm-pill--fail { background: #fde8e8; color: #b3261e; }
-.mm-report__warnnote {
-    margin: 0 0 0.7rem;
-    padding: 0.85rem 1.15rem;
-    border-radius: 10px;
-    border: 1px solid #f0d78a;
-    background: #fffaf0;
-    color: #7a5200;
-    font-size: 1.05rem;
-    font-weight: 700;
-    line-height: 1.5;
-}
 .mm-report__weeks {
     font-size: 1.1rem;
     color: #5b6b7b;

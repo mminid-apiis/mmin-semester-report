@@ -179,7 +179,6 @@ with st.container(key="card"):
                     "status_pass": t("report_status_pass"),
                     "status_warn": t("report_status_warn"),
                     "status_fail": t("report_status_fail"),
-                    "warn_notice": t("report_warn_notice"),
                     "kuis": t("report_avg_kuis"),
                     "kehadiran": t("report_avg_kehadiran"),
                     "rank": t("report_rank"),
