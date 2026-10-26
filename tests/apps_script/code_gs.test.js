@@ -143,8 +143,8 @@ section('notify: status + previews');
   for (const j of ['baru', 'pengingat']) {
     const body = s.previews[j].subject + '\n' + s.previews[j].body;
     ok(body.includes('https://mmin-semester-report.streamlit.app/'), j + ' has portal link');
-    ok(!/75|70%|lulus|pass|及格|kuis|quiz|nilai|grade|persen/i.test(body.replace(/Lihat laporan|View report/g, '')), j + ' leaks no grades/thresholds: ' + (body.match(/75|70%|lulus|pass|及格|kuis|quiz|nilai|grade|persen/i) || [''])[0]);
-    ok(body.includes('(Nama Siswa)') && body.includes('Halo') && body.includes('Hello') && body.includes('您好'), j + ' trilingual + greeting');
+    ok(!/75|70%|lulus|pass|kuis|quiz|nilai|grade|persen/i.test(body.replace(/Lihat laporan|View report/g, '')), j + ' leaks no grades/thresholds: ' + (body.match(/75|70%|lulus|pass|kuis|quiz|nilai|grade|persen/i) || [''])[0]);
+    ok(body.includes('(Nama Siswa)') && body.includes('Halo') && body.includes('Hello'), j + ' bilingual (ID+EN) + greeting');
   }
   ok(s.previews.pengingat.subject.startsWith('Pengingat'), 'reminder subject');
   ok(!w.call('admin_notify_status', { kelas: 'MMin 9 Nope' }).ok, 'unknown class');

@@ -788,19 +788,16 @@ function renderEmail(jenis, nama, kelas, semester) {
   var reminder = jenis === 'pengingat';
   var greetId = nama ? 'Halo ' + nama + ',' : 'Halo,';
   var greetEn = nama ? 'Hello ' + nama + ',' : 'Hello,';
-  var greetZh = nama ? nama + ' 您好，' : '您好，';
 
   var subject = reminder
-    ? 'Pengingat: laporan semester MMin Anda sudah tersedia (Reminder / 提醒)'
-    : 'Laporan semester MMin Anda sudah tersedia (Your report is ready / 成绩单已发布)';
+    ? 'Pengingat: laporan semester MMin Anda sudah tersedia (Reminder)'
+    : 'Laporan semester MMin Anda sudah tersedia (Your report is ready)';
 
   var intro = reminder
     ? ['Jika Anda belum sempat membukanya, laporan semester MMin Anda (' + kelas + ', ' + semester + ') bisa dilihat di:',
-       'If you have not had a chance to open it yet, your MMin semester report (' + kelas + ', ' + semester + ') is available at:',
-       '如果您还没有查看，您的 MMin 学期成绩单（' + kelas + '，' + semester + '）可在此查看：']
+       'If you have not had a chance to open it yet, your MMin semester report (' + kelas + ', ' + semester + ') is available at:']
     : ['Laporan semester MMin Anda (' + kelas + ', ' + semester + ') sudah bisa dilihat di:',
-       'Your MMin semester report (' + kelas + ', ' + semester + ') is now available at:',
-       '您的 MMin 学期成绩单（' + kelas + '，' + semester + '）现已可以查看：'];
+       'Your MMin semester report (' + kelas + ', ' + semester + ') is now available at:'];
 
   var body = [
     greetId, '', intro[0], url, '',
@@ -812,12 +809,6 @@ function renderEmail(jenis, nama, kelas, semester) {
     greetEn, '', intro[1], url, '',
     'To open it, enter the email, class, and phone number you used when registering for the program, then click "View report".',
     'If you run into any trouble, please contact your class advisor.',
-    '',
-    '-----',
-    '',
-    greetZh, '', intro[2], url, '',
-    '请输入报名时登记的电子邮箱、班级和手机号码，然后点击“查看成绩单”。',
-    '如有问题，请联系您的班主任。',
     '',
     'APIIS — 21st Century Training. For Christians. For Free'
   ].join('\n');

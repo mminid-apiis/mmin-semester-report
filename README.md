@@ -22,9 +22,8 @@ seluruh isi panel admin) ikut berubah bahasa; untuk menambah/mengubah teks
 lihat [`lib/i18n.py`](lib/i18n.py) (satu dict per bahasa, key harus sama persis
 di semuanya). Tombolnya dirender sekali dari `app.py` lewat
 `render_language_switcher()`, dan tampilannya (posisi, bendera) diatur di
-`lib/branding.py` (`.st-key-langswitch`). Terjemahan **中文 (zh)** masih
-tersimpan di `lib/i18n.py` tetapi belum ada pilihannya di tombol (tombol geser
-hanya punya dua posisi). Kolom **Catatan** yang Anda isi sendiri di Google Sheets **tidak**
+`lib/branding.py` (`.st-key-langswitch`). Hanya ada dua bahasa (Indonesia dan
+English); terjemahan Mandarin sudah dihapus. Kolom **Catatan** yang Anda isi sendiri di Google Sheets **tidak**
 ikut diterjemahkan otomatis — akan tampil apa adanya dalam bahasa yang Anda
 ketik. Nama kolom asli dari Google Sheets (`Email`, `Nomor HP`, `Nama`,
 `Kelas`, dst.) di tabel edit panel admin juga sengaja **tidak** diterjemahkan,
@@ -435,7 +434,7 @@ keduanya sekaligus dan menampilkan:
 Mengirim email ke siswa berisi link ke aplikasi ini, dari akun Google yang
 men-deploy Apps Script (pemilik script). Email **tidak pernah** memuat nilai,
 status kelulusan, atau syaratnya — hanya link dan cara membukanya, dalam
-Indonesia + English + 中文. Dua jenis:
+Indonesia + English. Dua jenis:
 
 - **Laporan baru tersedia** — ke semua siswa di kelas itu. Siswa yang sudah
   pernah dikirimi jenis ini **untuk semester yang sama** otomatis dilewati
