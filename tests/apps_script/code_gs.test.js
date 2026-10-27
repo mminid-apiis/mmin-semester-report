@@ -25,6 +25,17 @@ section('existing behaviour still intact');
   eq(createWorld().ctx.doPost({ postData: { contents: JSON.stringify({ action: 'ping', secret: 'x' }) } }).getContent(), '{"ok":false,"message":"Unauthorized."}', 'bad secret');
 }
 
+section('normalizePhone');
+{
+  const n = fresh().ctx.normalizePhone;
+  eq(n('+62 812-3450-0001'), '081234500001', '+62 -> 0');
+  eq(n('6281234500001'), '081234500001', '62 -> 0');
+  eq(n('81234500001'), '081234500001', 'angka tanpa 0 ditambah 0');
+  eq(n('+65 8817 6835'), '06588176835', 'kode negara lain: "+" dibuang, diawali 0');
+  eq(n('6588176835'), '06588176835', 'kode negara lain tanpa "+" ikut cocok');
+  eq(n('06588176835'), '06588176835', 'bentuk simpanan di sheet');
+}
+
 section('admin_log_event');
 {
   const w = fresh();

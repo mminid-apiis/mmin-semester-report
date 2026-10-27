@@ -958,6 +958,7 @@ function findColumn(headers, wantedLower) {
  * Normalisasi nomor HP ke format "08xxxxxxxxxx" sebelum dibandingkan.
  * - Hapus spasi, strip, tanda kurung.
  * - "+62xxx" atau "62xxx" -> "0xxx".
+ * - Kode negara lain, mis. "+6588176835" -> "06588176835" (tanpa "+", diawali 0).
  * - Sudah "0xxx" -> dibiarkan.
  * - Jaga-jaga: Google Sheets kadang menyimpan Nomor HP sebagai angka dan
  *   menghapus angka 0 di depan (mis. "08123456789" jadi 8123456789). Kalau
@@ -970,6 +971,8 @@ function normalizePhone(raw) {
 
   if (s.indexOf('+62') === 0) {
     s = '0' + s.substring(3);
+  } else if (s.indexOf('+') === 0) {
+    s = '0' + s.substring(1);
   } else if (s.indexOf('62') === 0) {
     s = '0' + s.substring(2);
   } else if (s.indexOf('0') !== 0 && /^[0-9]+$/.test(s)) {
