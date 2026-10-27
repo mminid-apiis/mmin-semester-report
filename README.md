@@ -129,8 +129,8 @@ keduanya menulis ke spreadsheet yang sama.
   `mm-*`).
 
   Di bawah kedua kartu ada kotak catatan: "nilai ini adalah nilai akumulasi
-  dari Semester 1". Teksnya **tetap** (sama untuk semua siswa), disimpan sebagai
-  `report_note` di [`lib/i18n.py`](lib/i18n.py) — ubah di sana (tiga bahasa)
+  dari Semester 1 dan 2". Teksnya **tetap** (sama untuk semua siswa), disimpan sebagai
+  `report_note` di [`lib/i18n.py`](lib/i18n.py) — ubah di sana (dua bahasa: id dan en)
   kalau semesternya berganti, atau hapus barisnya kalau catatan tidak
   diperlukan lagi.
 
