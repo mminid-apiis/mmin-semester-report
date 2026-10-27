@@ -16,6 +16,7 @@ page = st.navigation(
         st.Page("app_pages/student.py", title=t("nav_student"), icon=":material/school:"),
         st.Page("app_pages/admin.py", title=t("nav_admin"), icon=":material/admin_panel_settings:"),
     ],
-    position="top",
+    # Menu disembunyikan: siswa hanya melihat halaman laporan. Admin masuk lewat /admin.
+    position="hidden",
 )
 page.run()

@@ -346,8 +346,9 @@ ubah kode maupun deploy ulang Apps Script.
 
 ## Panel Admin
 
-Selain halaman "Laporan Semester" untuk siswa, ada halaman **Admin** (link di
-navigasi atas, bisa juga dibuka langsung lewat `/admin`).
+Selain halaman "Laporan Semester" untuk siswa, ada halaman **Admin**. Menu
+navigasi disembunyikan (`position="hidden"` di `app.py`), jadi siswa tidak melihat
+link-nya; admin membuka langsung lewat alamat `/admin` (simpan sebagai bookmark).
 
 ### Akun admin
 
