@@ -4,3 +4,9 @@ __pycache__/
 *.pyc
 # Salinan Code.gs yang sudah berisi SPREADSHEET_ID & SHARED_SECRET asli -- jangan di-commit.
 google_apps_script/Code.deploy.gs
+
+# Data pribadi siswa (nomor HP, dll.) -- JANGAN PERNAH masuk Git.
+MMin-Data-Privat/
+*_PRIVAT.csv
+*Form responses*.csv
+*Pendaftaran*.csv
