@@ -120,9 +120,11 @@ keduanya menulis ke spreadsheet yang sama.
   tiga warna (aturannya di bagian "Status kelulusan" di bawah), tanpa angka
   syarat dan tanpa rincian per kriteria. Kalimat status ("Semester 3" dst.)
   tetap, ada di `report_status_*` di `lib/i18n.py`.
-  Angka persen tampil bulat kalau tidak ada desimal, selain itu satu desimal
-  yang **dipotong** (bukan dibulatkan) supaya angka yang terlihat tidak pernah
-  tampak lolos padahal belum.
+  Angka persen selalu tampil dengan **dua desimal** (mis. `82.90`, `77.50`,
+  `88.00`) dan **dipotong** (bukan dibulatkan) supaya angka yang terlihat tidak
+  pernah tampak lolos padahal belum. Jumlah desimalnya diatur di
+  `format_percent()` dalam `lib/report_view.py`; di sheet cukup isi angkanya,
+  tanpa perlu format khusus (lihat juga "Soal format persen" di bawah).
   Tampilannya ada di `lib/report_view.py` (HTML) dan `lib/branding.py` (CSS
   `mm-*`).
 

@@ -12,12 +12,12 @@ import math
 
 
 def format_percent(value: float | None) -> str:
-    """Angka tanpa desimal kalau bulat, selain itu satu desimal (dipotong, bukan
-    dibulatkan, supaya angka yang tampil tidak pernah >= batas tapi berstatus belum)."""
+    """Selalu dua desimal (82.90, 77.50, 88.00). Dipotong, bukan dibulatkan, supaya angka
+    yang tampil tidak pernah >= batas padahal berstatus belum memenuhi."""
     if value is None:
         return "-"
-    truncated = math.floor(round(value * 10, 6)) / 10
-    return f"{truncated:.0f}" if truncated == int(truncated) else f"{truncated:.1f}"
+    truncated = math.floor(round(value * 100, 6)) / 100
+    return f"{truncated:.2f}"
 
 
 def _tile(label: str, value: float | None, bar_class: str) -> str:

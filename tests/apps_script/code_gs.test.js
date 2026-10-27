@@ -320,5 +320,19 @@ section('class rank by quiz percentage');
   eq(w.ctx.parsePercentage('75,5%'), 75.5, 'comma decimal + percent sign');
 }
 
+section('class rank with two-decimal scores');
+{
+  const w = fresh();
+  const sh = w.ss.getSheetByName('Semester 2 Leadership');
+  sh.getRange(2, 5).setValues([[82.9]]);        // testsatu: angka 82.9
+  sh.getRange(3, 5).setValues([['82,90']]);     // testdua: teks dengan koma desimal -> juga 82.90
+  sh.getRange(4, 5).setValues([[82.91]]);       // testlima: selisih 0.01 di atas
+  const rank = (email, phone) => w.call('get_report', { kelas: 'MMin 2 Leadership', email, phone }).rank;
+  eq(rank('testlima@example.com', '081234500005'), { position: 1, total: 5 }, '82.91 beats 82.90 by 0.01');
+  eq(rank('testsatu@example.com', '081234500001'), { position: 2, total: 5 }, '82.9 (number) = rank 2');
+  eq(rank('testdua@example.com', '081234500002'), { position: 2, total: 5 }, '"82,90" (text) ties with 82.9');
+}
+
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
