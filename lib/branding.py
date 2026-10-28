@@ -326,8 +326,12 @@ def _data_uri(svg: str) -> str:
 # kanan (hidup) = Indonesia; knopnya menampilkan bendera bahasa yang aktif.
 _LANG_TOGGLE_CSS = """
 <style>
+/* Ikut bergulir bersama halaman: diposisikan absolut terhadap area gulir (stMain). */
+[data-testid="stMain"] {
+    position: relative;
+}
 .st-key-langswitch {
-    position: fixed;
+    position: absolute;
     top: 0.55rem;
     right: 1rem;
     z-index: 1000002;
