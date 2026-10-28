@@ -95,17 +95,22 @@ with st.container(key="card"):
     with st.form("lookup_form", border=False):
         # Key tetap supaya isian form tidak hilang saat ganti bahasa (tanpa key,
         # label yang berubah dianggap widget baru dan isiannya ter-reset).
-        email = st.text_input(t("email_label"), placeholder=t("email_placeholder"), key=KEY_EMAIL)
-        kelas = st.selectbox(
-            t("kelas_label"),
-            options=KELAS_OPTIONS,
-            index=None,
-            placeholder=t("kelas_placeholder"),
-            key=KEY_KELAS,
-        )
-        submitted = st.form_submit_button(
-            t("submit_button"), icon=":material/search:", type="primary", width="stretch"
-        )
+        # Email | Kelas | tombol sebaris di layar lebar (otomatis menumpuk di HP).
+        col_email, col_kelas, col_button = st.columns([5, 3, 2], vertical_alignment="bottom")
+        with col_email:
+            email = st.text_input(t("email_label"), placeholder=t("email_placeholder"), key=KEY_EMAIL)
+        with col_kelas:
+            kelas = st.selectbox(
+                t("kelas_label"),
+                options=KELAS_OPTIONS,
+                index=None,
+                placeholder=t("kelas_placeholder"),
+                key=KEY_KELAS,
+            )
+        with col_button:
+            submitted = st.form_submit_button(
+                t("submit_button"), icon=":material/search:", type="primary", width="stretch"
+            )
 
     if submitted:
         st.session_state.pop(KEY_REPORT, None)

@@ -107,7 +107,7 @@ _BRAND_CSS = """
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.15);
     border-top: 5px solid #7cb518;
     padding: 2rem 2.5rem 1.75rem;
-    max-width: 660px;
+    max-width: 980px;
     margin: 2rem auto 3rem;
 }
 .st-key-card [data-testid="stWidgetLabel"] p {
@@ -250,6 +250,22 @@ _BRAND_CSS = """
     content: "\\2139";
     margin-right: 0.6rem;
     font-weight: 700;
+}
+.mm-report__pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 1.25rem;
+}
+.mm-report__pair .mm-report__rank,
+.mm-report__pair .mm-report__note {
+    margin-top: 0;
+    display: flex;
+    align-items: center;
+}
+.mm-report__pair .mm-report__rank { display: block; align-self: stretch; }
+@media (max-width: 760px) {
+    .mm-report__pair { grid-template-columns: 1fr; }
 }
 .mm-bar--blue { background: #0b77ba; }
 .mm-bar--green { background: #7cb518; }
