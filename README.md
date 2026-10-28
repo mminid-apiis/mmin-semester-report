@@ -160,7 +160,7 @@ ditulis; ada uji batasnya di `tests/test_grading.py`):
 | Warna | Kondisi | Yang dibaca siswa |
 |---|---|---|
 | Hijau | kuis **≥ 70%** dan kehadiran **≥ 75%** | ANDA MEMENUHI SYARAT UNTUK MELANJUTKAN DI SEMESTER 3 |
-| Kuning | selain hijau, tapi kuis dan kehadiran keduanya **≥ 50%** | Lulus bersyarat: Diharapkan ada peningkatan secara signifikan di semester 3. |
+| Kuning | selain hijau, tapi kuis dan kehadiran keduanya **≥ 50%** | LULUS BERSYARAT: DIHARAPKAN ADA PENINGKATAN SECARA SIGNIFIKAN DI SEMESTER 3. |
 | Merah | kuis **atau** kehadiran **< 50%** | ANDA TIDAK MEMENUHI SYARAT UNTUK MELANJUTKAN DI SEMESTER 3 |
 
 Catatan penting soal aturan: kehadiran **70–75%** otomatis masuk **kuning** (bukan
