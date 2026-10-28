@@ -148,6 +148,10 @@ _BRAND_CSS = """
     padding-bottom: 1.5rem;
     border-bottom: 1px solid #e3e8ed;
 }
+.mm-report__who {
+    flex: 1 1 auto;
+    min-width: 0;
+}
 .mm-report__kelas {
     font-size: 0.9rem;
     font-weight: 700;
@@ -282,10 +286,13 @@ _BRAND_CSS = """
 .mm-bar--green { background: #7cb518; }
 @media (max-width: 640px) {
     .st-key-card, .st-key-card_wide { padding: 1.5rem 1.1rem 1.25rem; }
+    .mm-report__top { flex-direction: column; gap: 0.9rem; }
+    .mm-report__chip { align-self: flex-start; }
+    .st-key-hero img { width: min(240px, 62vw) !important; max-width: 240px !important; }
 }
 
 .st-key-footer, .st-key-footer p {
-    color: #7fa8c9 !important;
+    color: #b9d1e5 !important;
     text-align: center;
     font-size: 0.8rem;
 }
