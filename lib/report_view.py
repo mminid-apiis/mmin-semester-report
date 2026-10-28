@@ -95,6 +95,4 @@ def build_report_html(
             .replace("{total}", f"<strong>{int(total)}</strong>")
         )
         rank_html = f'<div class="mm-report__rank">{rank_text}</div>'
-    # Peringkat dan catatan berdampingan di layar lebar (menumpuk di HP) supaya kartu tidak terlalu panjang.
-    info = f'<div class="mm-report__pair">{rank_html}{note_html}</div>' if rank_html and note_html else rank_html + note_html
-    return f'<div class="mm-report"><div class="mm-report__top">{who}{chip}</div>{tiles}{info}{status_html}</div>'
+    return f'<div class="mm-report"><div class="mm-report__top">{who}{chip}</div>{tiles}{rank_html}{note_html}{status_html}</div>'
