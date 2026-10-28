@@ -14,26 +14,18 @@ section('existing behaviour still intact');
   const w = fresh();
   eq(w.call('ping').message, 'pong', 'ping');
   eq(w.call('list_semesters').semesters, ['Semester 1 Leadership', 'Semester 2 Leadership', 'Semester 2 Pastoral'], 'list_semesters hides _ tabs');
-  const r = w.call('get_report', { kelas: 'MMin 2 Leadership', phone: '+62 812-3450-0001', email: 'TestSatu@Example.com' });
+  const r = w.call('get_report', { kelas: 'MMin 2 Leadership', email: 'TestSatu@Example.com' });
   ok(r.ok && r.semester === 'Semester 2' && r.data.Nama === 'Test Satu', 'get_report matches, uses rightmost tab');
-  ok(!w.call('get_report', { kelas: 'MMin 2 Leadership', phone: '0000', email: 'testsatu@example.com' }).ok, 'wrong phone rejected');
+  ok(!w.call('get_report', { kelas: 'MMin 2 Leadership', email: 'tidak.ada@example.com' }).ok, 'unknown email rejected');
+  ok(!w.call('get_report', { kelas: 'MMin 2 Pastoral', email: 'testsatu@example.com' }).ok, 'right email but wrong class rejected');
+  ok(!w.call('get_report', { kelas: 'MMin 2 Leadership', email: '' }).ok, 'empty email rejected');
   const log = w.call('admin_access_log').rows;
   eq(log.length, 1, 'one access logged');
   eq(log[0].Semester, 'Semester 2', 'access log semester');
+  ok(w.call('get_report', { kelas: 'MMin 2 Leadership', email: ' testsatu@example.com ', phone: 'diabaikan' }).ok, 'phone is ignored, email trimmed');
   ok(!w.call('list_semesters').semesters.some(n => n.startsWith('_')), 'log tabs hidden from list_semesters');
   eq(w.call('bogus').message, 'Action tidak dikenal.', 'unknown action');
   eq(createWorld().ctx.doPost({ postData: { contents: JSON.stringify({ action: 'ping', secret: 'x' }) } }).getContent(), '{"ok":false,"message":"Unauthorized."}', 'bad secret');
-}
-
-section('normalizePhone');
-{
-  const n = fresh().ctx.normalizePhone;
-  eq(n('+62 812-3450-0001'), '081234500001', '+62 -> 0');
-  eq(n('6281234500001'), '081234500001', '62 -> 0');
-  eq(n('81234500001'), '081234500001', 'angka tanpa 0 ditambah 0');
-  eq(n('+65 8817 6835'), '06588176835', 'kode negara lain: "+" dibuang, diawali 0');
-  eq(n('6588176835'), '06588176835', 'kode negara lain tanpa "+" ikut cocok');
-  eq(n('06588176835'), '06588176835', 'bentuk simpanan di sheet');
 }
 
 section('admin_log_event');
@@ -227,7 +219,7 @@ section('notify: failures, exclude, quota');
   r = q.call('admin_notify_send', { kelas: 'MMin 2 Leadership', jenis: 'baru', admin: 'admin1' });
   ok(!r.ok && r.code === 'quota', 'quota exhausted -> code=quota');
   const none = fresh({ quota: 0 });
-  none.call('get_report', { kelas: 'MMin 2 Pastoral', phone: '081234500003', email: 'testtiga@example.com' }); // only Pastoral student has opened -> nobody to remind
+  none.call('get_report', { kelas: 'MMin 2 Pastoral', email: 'testtiga@example.com' }); // only Pastoral student has opened -> nobody to remind
   r = none.call('admin_notify_send', { kelas: 'MMin 2 Pastoral', jenis: 'pengingat', admin: 'a' });
   ok(r.ok && r.sent === 0, 'nothing eligible + zero quota is not an error');
   ok(!none.call('admin_notify_send', { kelas: 'MMin 2 Leadership', jenis: 'hack', admin: 'a' }).ok, 'bad jenis rejected');
@@ -237,7 +229,7 @@ section('notify: reminders');
 {
   const w = fresh();
   // testsatu opens the report this semester; testdua opened only in an OLD semester
-  w.call('get_report', { kelas: 'MMin 2 Leadership', phone: '081234500001', email: 'testsatu@example.com' });
+  w.call('get_report', { kelas: 'MMin 2 Leadership', email: 'testsatu@example.com' });
   const logSheet = w.ss.getSheetByName('_AccessLog_Leadership');
   logSheet.appendRow([new Date(), 'Test Dua', 'testdua@example.com', 'MMin 2 Leadership', 'Semester 1']);
   const st = w.call('admin_notify_status', { kelas: 'MMin 2 Leadership' });
@@ -253,7 +245,7 @@ section('notify: reminders');
   r = w.call('admin_notify_send', { kelas: 'MMin 2 Leadership', jenis: 'pengingat', admin: 'admin1', force: true });
   eq(r.sent, 2, 'force overrides cooldown');
   const w2 = fresh();
-  w2.call('get_report', { kelas: 'MMin 2 Leadership', phone: '081234500001', email: 'testsatu@example.com' });
+  w2.call('get_report', { kelas: 'MMin 2 Leadership', email: 'testsatu@example.com' });
   r = w2.call('admin_notify_send', { kelas: 'MMin 2 Leadership', jenis: 'pengingat', admin: 'a', force: true });
   ok(!w2.outbox.some(m => m.to === 'testsatu@example.com'), 'force never reminds someone who already opened');
   // "baru" and "pengingat" are tracked independently
@@ -283,7 +275,7 @@ section('log tabs are invisible to the student side');
   w.call('admin_notify_send', { kelas: 'MMin 2 Pastoral', jenis: 'baru', admin: 'a' });
   const names = w.call('list_semesters').semesters;
   ok(!names.includes('_AdminAuditLog') && !names.includes('_NotifLog'), 'hidden from list_semesters');
-  const lead = w.call('get_report', { kelas: 'MMin 2 Leadership', phone: '081234500001', email: 'testsatu@example.com' });
+  const lead = w.call('get_report', { kelas: 'MMin 2 Leadership', email: 'testsatu@example.com' });
   ok(lead.ok && lead.semester === 'Semester 2', 'findClassSheet unaffected by new _ tabs');
   ok(w.call('admin_access_log').rows.every(r => 'Semester' in r), 'admin_access_log unaffected by new tabs');
   ok(w.ss.getSheets().slice(-2).every(s => s.name.startsWith('_')), 'new log tabs created at the end');
@@ -291,39 +283,39 @@ section('log tabs are invisible to the student side');
 
 section('class rank by quiz percentage');
 {
-  const rank = (w, email, phone, kelas = 'MMin 2 Leadership') => w.call('get_report', { kelas, email, phone });
+  const rank = (w, email, kelas = 'MMin 2 Leadership') => w.call('get_report', { kelas, email });
   const w = fresh();
   // Seed Leadership: testsatu 88, testdua 82, testlima 90, "Tanpa Email" 70, "Email Rusak" 70  (5 siswa bernilai)
-  let r = rank(w, 'testlima@example.com', '081234500005');
+  let r = rank(w, 'testlima@example.com');
   eq(r.rank, { position: 1, total: 5 }, 'highest quiz = rank 1 of 5');
-  eq(rank(w, 'testsatu@example.com', '081234500001').rank, { position: 2, total: 5 }, '88 -> rank 2');
-  eq(rank(w, 'testdua@example.com', '081234500002').rank, { position: 3, total: 5 }, '82 -> rank 3');
+  eq(rank(w, 'testsatu@example.com').rank, { position: 2, total: 5 }, '88 -> rank 2');
+  eq(rank(w, 'testdua@example.com').rank, { position: 3, total: 5 }, '82 -> rank 3');
   eq(Object.keys(r.rank), ['position', 'total'], 'only position+total are exposed');
   ok(!JSON.stringify(r).includes('Test Satu') && !JSON.stringify(r).includes('testsatu'), "no other student's data in the response");
-  eq(rank(w, 'testtiga@example.com', '081234500003', 'MMin 2 Pastoral').rank, { position: 1, total: 1 }, 'single student class = 1 of 1');
+  eq(rank(w, 'testtiga@example.com', 'MMin 2 Pastoral').rank, { position: 1, total: 1 }, 'single student class = 1 of 1');
 
   // ties share the rank (1,2,2,4) and the pool grows
   const sh = w.ss.getSheetByName('Semester 2 Leadership');
   sh.getRange(7, 1, 1, 7).setValues([['kembar@example.com', '081299900001', 'Kembar', 'MMin 2 Leadership', 88, 80, '']]);
-  eq(rank(w, 'testsatu@example.com', '081234500001').rank, { position: 2, total: 6 }, 'tie at 88: rank 2 of 6');
-  eq(rank(w, 'kembar@example.com', '081299900001').rank, { position: 2, total: 6 }, 'tied student shares rank 2');
-  eq(rank(w, 'testdua@example.com', '081234500002').rank, { position: 4, total: 6 }, 'after a 2-way tie the next rank is 4');
+  eq(rank(w, 'testsatu@example.com').rank, { position: 2, total: 6 }, 'tie at 88: rank 2 of 6');
+  eq(rank(w, 'kembar@example.com').rank, { position: 2, total: 6 }, 'tied student shares rank 2');
+  eq(rank(w, 'testdua@example.com').rank, { position: 4, total: 6 }, 'after a 2-way tie the next rank is 4');
 
   // percent formats count the same as plain numbers
   sh.getRange(3, 5).setValues([['82%']]);
   sh.getRange(7, 5).setValues([[0.88]]);
-  eq(rank(w, 'testdua@example.com', '081234500002').rank, { position: 4, total: 6 }, '"82%" parsed as 82');
-  eq(rank(w, 'kembar@example.com', '081299900001').rank, { position: 2, total: 6 }, '0.88 parsed as 88 (still ties with 88)');
+  eq(rank(w, 'testdua@example.com').rank, { position: 4, total: 6 }, '"82%" parsed as 82');
+  eq(rank(w, 'kembar@example.com').rank, { position: 2, total: 6 }, '0.88 parsed as 88 (still ties with 88)');
 
   // another class's row pasted into this tab is not counted
   sh.getRange(8, 1, 1, 7).setValues([['intruder@example.com', '081299900002', 'Intruder', 'MMin 2 Pastoral', 99, 99, '']]);
-  eq(rank(w, 'testlima@example.com', '081234500005').rank, { position: 1, total: 6 }, 'row with another Kelas is excluded');
+  eq(rank(w, 'testlima@example.com').rank, { position: 1, total: 6 }, 'row with another Kelas is excluded');
 
   // blank quiz: no rank for that student, and they are not in anyone's total
   sh.getRange(3, 5).setValues([['']]);
-  r = rank(w, 'testdua@example.com', '081234500002');
+  r = rank(w, 'testdua@example.com');
   ok(r.ok && r.rank === null && r.data.Nama === 'Test Dua', 'blank quiz -> rank null but report still returned');
-  eq(rank(w, 'testlima@example.com', '081234500005').rank, { position: 1, total: 5 }, 'blank quiz is excluded from total');
+  eq(rank(w, 'testlima@example.com').rank, { position: 1, total: 5 }, 'blank quiz is excluded from total');
 
   // helpers
   eq(w.ctx.computeQuizRank([['Email', 'Nama'], ['a@b.c', 'A']], ['Email', 'Nama'], 1, 'k'), null, 'missing quiz column -> null');
@@ -338,10 +330,10 @@ section('class rank with two-decimal scores');
   sh.getRange(2, 5).setValues([[82.9]]);        // testsatu: angka 82.9
   sh.getRange(3, 5).setValues([['82,90']]);     // testdua: teks dengan koma desimal -> juga 82.90
   sh.getRange(4, 5).setValues([[82.91]]);       // testlima: selisih 0.01 di atas
-  const rank = (email, phone) => w.call('get_report', { kelas: 'MMin 2 Leadership', email, phone }).rank;
-  eq(rank('testlima@example.com', '081234500005'), { position: 1, total: 5 }, '82.91 beats 82.90 by 0.01');
-  eq(rank('testsatu@example.com', '081234500001'), { position: 2, total: 5 }, '82.9 (number) = rank 2');
-  eq(rank('testdua@example.com', '081234500002'), { position: 2, total: 5 }, '"82,90" (text) ties with 82.9');
+  const rank = (email) => w.call('get_report', { kelas: 'MMin 2 Leadership', email }).rank;
+  eq(rank('testlima@example.com'), { position: 1, total: 5 }, '82.91 beats 82.90 by 0.01');
+  eq(rank('testsatu@example.com'), { position: 2, total: 5 }, '82.9 (number) = rank 2');
+  eq(rank('testdua@example.com'), { position: 2, total: 5 }, '"82,90" (text) ties with 82.9');
 }
 
 

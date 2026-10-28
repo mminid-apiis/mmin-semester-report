@@ -64,6 +64,18 @@ _BRAND_CSS = """
     color: #ffffff !important;
     text-align: center;
 }
+/* Judul dua warna: kata terakhir hijau APIIS. */
+.st-key-hero .mm-title {
+    margin: 0.6rem 0 0;
+    padding: 0;
+    font-size: clamp(2.1rem, 7vw, 3.1rem);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+}
+.st-key-hero .mm-title span {
+    color: #7cb518 !important;
+}
 /* st.image bungkus <img> dalam beberapa lapis div (stElementContainer >
    stFullScreenFrame > stImage), semuanya ikut menyusut ke lebar gambar --
    jadi margin:auto harus ditaruh di stElementContainer (elemen yang benar-
@@ -93,9 +105,28 @@ _BRAND_CSS = """
     background: #ffffff;
     border-radius: 14px;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.15);
-    padding: 2rem 2.5rem 1.5rem;
-    max-width: 1100px;
+    border-top: 5px solid #7cb518;
+    padding: 2rem 2.5rem 1.75rem;
+    max-width: 660px;
     margin: 2rem auto 3rem;
+}
+.st-key-card [data-testid="stWidgetLabel"] p {
+    font-size: 1.02rem;
+    font-weight: 600;
+    color: #1b2835;
+}
+.st-key-card [data-testid="stFormSubmitButton"] button {
+    min-height: 3.4rem;
+    font-size: 1.05rem;
+    font-weight: 600;
+    background: #2f7bc4;
+    border-color: #2f7bc4;
+    color: #ffffff;
+}
+.st-key-card [data-testid="stFormSubmitButton"] button:hover {
+    background: #2468a8;
+    border-color: #2468a8;
+    color: #ffffff;
 }
 
 /* Kartu hasil laporan siswa (lib/report_view.py). Font sengaja besar supaya

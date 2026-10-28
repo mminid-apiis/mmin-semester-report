@@ -7,10 +7,10 @@ from lib.i18n import t
 from lib.report_view import build_report_html
 
 ORG_TAGLINE = "21st Century Training. For Christians. For Free"
+ORG_NAME = "Asia Pacific Institute of International Studies · Master of Ministry"
 
 KEY_EMAIL = "lookup_email"
 KEY_KELAS = "lookup_kelas"
-KEY_PHONE = "lookup_phone"
 KEY_REPORT = "student_report"
 
 FIELD_NAMA = "nama"
@@ -71,24 +71,28 @@ def reset_lookup():
     st.session_state.pop(KEY_REPORT, None)
     st.session_state[KEY_EMAIL] = ""
     st.session_state[KEY_KELAS] = None
-    st.session_state[KEY_PHONE] = ""
 
 
 with st.container(key="hero"):
     st.image("assets/logo_apiis.png", width=420)
     st.caption(ORG_TAGLINE)
-    st.title(t("app_title"))
+    st.html(f'<h1 class="mm-title">{t("app_title")} <span>{t("app_title_accent")}</span></h1>')
 
 with st.container(key="card"):
     st.caption(t("intro_caption"))
 
-    semesters = load_semesters()
+    try:
+        semesters = load_semesters()
+    except AppsScriptError as exc:
+        # Gangguan jaringan sesaat: tampilkan pesan ramah (hasil gagal tidak di-cache).
+        st.error(t(exc.code))
+        st.stop()
 
     if not semesters:
         st.error(t("no_semesters_error"))
         st.stop()
 
-    with st.form("lookup_form", border=True):
+    with st.form("lookup_form", border=False):
         # Key tetap supaya isian form tidak hilang saat ganti bahasa (tanpa key,
         # label yang berubah dianggap widget baru dan isiannya ter-reset).
         email = st.text_input(t("email_label"), placeholder=t("email_placeholder"), key=KEY_EMAIL)
@@ -99,12 +103,13 @@ with st.container(key="card"):
             placeholder=t("kelas_placeholder"),
             key=KEY_KELAS,
         )
-        phone = st.text_input(t("phone_label"), placeholder=t("phone_placeholder"), key=KEY_PHONE)
-        submitted = st.form_submit_button(t("submit_button"), icon=":material/search:")
+        submitted = st.form_submit_button(
+            t("submit_button"), icon=":material/search:", type="primary", width="stretch"
+        )
 
     if submitted:
         st.session_state.pop(KEY_REPORT, None)
-        if not email.strip() or not kelas or not phone.strip():
+        if not email.strip() or not kelas:
             st.warning(t("warning_incomplete"))
         else:
             result = None
@@ -115,7 +120,6 @@ with st.container(key="card"):
                         {
                             "email": email.strip(),
                             "kelas": kelas,
-                            "phone": phone.strip(),
                         },
                     )
                 except AppsScriptError as exc:
@@ -197,4 +201,4 @@ with st.container(key="card"):
         st.caption(f":material/help: {t('help_not_found')}")
 
 with st.container(key="footer"):
-    st.caption("MMin Semester Report")
+    st.caption(ORG_NAME)

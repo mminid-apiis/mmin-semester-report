@@ -2,10 +2,11 @@ import streamlit as st
 
 _TRANSLATIONS = {
     "id": {
-        "app_title": "Laporan Semester MMin",
+        "app_title": "Laporan Semester",
+        "app_title_accent": "MMin",
         "intro_caption": (
-            "Masukkan email, kelas, dan nomor HP yang terdaftar saat pendaftaran "
-            "program untuk melihat nilai dan kehadiran Anda."
+            "Masukkan email yang Anda daftarkan dan pilih kelas Anda untuk melihat "
+            "rata-rata kuis dan kehadiran Anda."
         ),
         "lang_label": "🌐 Bahasa",
         "nav_student": "Laporan Semester",
@@ -15,13 +16,11 @@ _TRANSLATIONS = {
         "email_placeholder": "nama@email.com",
         "kelas_label": "Kelas",
         "kelas_placeholder": "Pilih kelas Anda",
-        "phone_label": "Nomor HP",
-        "phone_placeholder": "08xxxxxxxxxx",
         "submit_button": "Lihat laporan",
         "spinner_search": "Mencari data...",
-        "warning_incomplete": "Lengkapi email, kelas, dan nomor HP terlebih dahulu.",
+        "warning_incomplete": "Lengkapi email dan kelas terlebih dahulu.",
         "error_not_found": (
-            "Data tidak ditemukan. Pastikan email, kelas, dan nomor HP sesuai dengan "
+            "Data tidak ditemukan. Pastikan email dan kelas sesuai dengan "
             "data pendaftaran Anda."
         ),
         "incomplete_data_warning": (
@@ -199,10 +198,11 @@ _TRANSLATIONS = {
         "admin_notify_history_subheader": "Riwayat pengiriman terakhir",
     },
     "en": {
-        "app_title": "MMin Semester Report",
+        "app_title": "MMin Semester",
+        "app_title_accent": "Report",
         "intro_caption": (
-            "Enter the email, class, and phone number you registered with to view "
-            "your grades and attendance."
+            "Enter the email you registered with and choose your class to view "
+            "your quiz and attendance averages."
         ),
         "lang_label": "🌐 Language",
         "nav_student": "Semester Report",
@@ -212,13 +212,11 @@ _TRANSLATIONS = {
         "email_placeholder": "name@email.com",
         "kelas_label": "Class",
         "kelas_placeholder": "Select your class",
-        "phone_label": "Phone number",
-        "phone_placeholder": "08xxxxxxxxxx",
         "submit_button": "View report",
         "spinner_search": "Searching...",
-        "warning_incomplete": "Please fill in email, class, and phone number first.",
+        "warning_incomplete": "Please fill in email and class first.",
         "error_not_found": (
-            "Data not found. Please make sure your email, class, and phone number "
+            "Data not found. Please make sure your email and class "
             "match your registration."
         ),
         "incomplete_data_warning": (

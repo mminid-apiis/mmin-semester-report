@@ -83,7 +83,7 @@ function doPost(e) {
       case 'list_semesters':
         return jsonResponse(listSemesters());
       case 'get_report':
-        return jsonResponse(getReport(body.kelas, body.phone, body.email));
+        return jsonResponse(getReport(body.kelas, body.email));
       case 'admin_list_class':
         return jsonResponse(adminListClass(body.kelas));
       case 'admin_save_class':
@@ -166,8 +166,12 @@ function displaySemesterLabel(sheetName, kelas) {
   return label || sheetName;
 }
 
-function getReport(kelas, phone, email) {
-  if (!kelas || !phone || !email) {
+/**
+ * Cari siswa berdasarkan Email + Kelas saja (nomor HP tidak lagi dipakai untuk
+ * masuk). Kolom Nomor HP di sheet tetap boleh ada; hanya tidak dibaca di sini.
+ */
+function getReport(kelas, email) {
+  if (!kelas || !email) {
     return { ok: false, message: 'Data tidak ditemukan.' };
   }
 
@@ -183,7 +187,6 @@ function getReport(kelas, phone, email) {
   }
 
   var headers = values[0].map(function (h) { return String(h).trim(); });
-  var phoneIdx = findColumn(headers, COLUMN_PHONE);
   var emailIdx = findColumn(headers, COLUMN_EMAIL);
   var namaIdx = findColumn(headers, COLUMN_NAMA);
   // Kolom Kelas opsional di sini: tab-nya sendiri sudah memilah per kelas,
@@ -191,25 +194,23 @@ function getReport(kelas, phone, email) {
   // (jaga-jaga ada baris yang salah tempel tab).
   var kelasIdx = findColumn(headers, COLUMN_KELAS);
 
-  if (phoneIdx === -1 || emailIdx === -1) {
-    console.error('Sheet "' + sheet.getName() + '" tidak punya kolom "Nomor HP" atau "Email".');
+  if (emailIdx === -1) {
+    console.error('Sheet "' + sheet.getName() + '" tidak punya kolom "Email".');
     return { ok: false, message: 'Data tidak ditemukan.' };
   }
 
   var targetKelas = String(kelas).trim().toLowerCase();
-  var targetPhone = normalizePhone(phone);
   var targetEmail = String(email).trim().toLowerCase();
 
   for (var r = 1; r < values.length; r++) {
     var row = values[r];
-    var rowPhone = normalizePhone(row[phoneIdx]);
     var rowEmail = String(row[emailIdx]).trim().toLowerCase();
     var kelasOk = true;
     if (kelasIdx !== -1) {
       kelasOk = String(row[kelasIdx]).trim().toLowerCase() === targetKelas;
     }
 
-    if (kelasOk && rowPhone === targetPhone && rowPhone !== '' && rowEmail === targetEmail && rowEmail !== '') {
+    if (kelasOk && rowEmail === targetEmail && rowEmail !== '') {
       var data = {};
       for (var c = 0; c < headers.length; c++) {
         if (!headers[c]) continue;
@@ -801,13 +802,13 @@ function renderEmail(jenis, nama, kelas, semester) {
 
   var body = [
     greetId, '', intro[0], url, '',
-    'Cara membuka: masukkan email, kelas, dan nomor HP yang Anda daftarkan saat pendaftaran program, lalu klik "Lihat laporan".',
+    'Cara membuka: masukkan email yang Anda daftarkan, pilih kelas Anda, lalu klik "Lihat laporan".',
     'Jika ada kendala, silakan hubungi wali kelas Anda.',
     '',
     '-----',
     '',
     greetEn, '', intro[1], url, '',
-    'To open it, enter the email, class, and phone number you used when registering for the program, then click "View report".',
+    'To open it, enter the email you registered with, choose your class, then click "View report".',
     'If you run into any trouble, please contact your class advisor.',
     '',
     'APIIS — 21st Century Training. For Christians. For Free'
@@ -952,34 +953,6 @@ function findColumn(headers, wantedLower) {
     if (headers[i].toLowerCase() === wantedLower) return i;
   }
   return -1;
-}
-
-/**
- * Normalisasi nomor HP ke format "08xxxxxxxxxx" sebelum dibandingkan.
- * - Hapus spasi, strip, tanda kurung.
- * - "+62xxx" atau "62xxx" -> "0xxx".
- * - Kode negara lain, mis. "+6588176835" -> "06588176835" (tanpa "+", diawali 0).
- * - Sudah "0xxx" -> dibiarkan.
- * - Jaga-jaga: Google Sheets kadang menyimpan Nomor HP sebagai angka dan
- *   menghapus angka 0 di depan (mis. "08123456789" jadi 8123456789). Kalau
- *   hasilnya semua angka tapi tidak diawali 0, tambahkan kembali 0 di depan.
- */
-function normalizePhone(raw) {
-  if (raw === null || raw === undefined || raw === '') return '';
-  var s = String(raw).trim();
-  s = s.replace(/[\s\-()]/g, '');
-
-  if (s.indexOf('+62') === 0) {
-    s = '0' + s.substring(3);
-  } else if (s.indexOf('+') === 0) {
-    s = '0' + s.substring(1);
-  } else if (s.indexOf('62') === 0) {
-    s = '0' + s.substring(2);
-  } else if (s.indexOf('0') !== 0 && /^[0-9]+$/.test(s)) {
-    s = '0' + s;
-  }
-
-  return s;
 }
 
 function jsonResponse(obj) {
