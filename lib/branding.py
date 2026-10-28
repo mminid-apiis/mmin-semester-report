@@ -99,7 +99,7 @@ _BRAND_CSS = """
     height: auto !important;
 }
 
-.st-key-card {
+.st-key-card, .st-key-card_wide {
     position: relative;
     z-index: 1;
     background: #ffffff;
@@ -107,10 +107,16 @@ _BRAND_CSS = """
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.15);
     border-top: 5px solid #7cb518;
     padding: 2rem 2.5rem 1.75rem;
-    max-width: 980px;
+    max-width: 660px;
     margin: 2rem auto 3rem;
 }
-.st-key-card [data-testid="stWidgetLabel"] p {
+/* Halaman hasil: kartu lebar, tanpa form. */
+.st-key-card_wide {
+    max-width: 1100px;
+    padding: 2.25rem 2.5rem 2rem;
+}
+.st-key-card [data-testid="stWidgetLabel"] p,
+.st-key-card_wide [data-testid="stWidgetLabel"] p {
     font-size: 1.02rem;
     font-weight: 600;
     color: #1b2835;
@@ -132,10 +138,31 @@ _BRAND_CSS = """
 /* Kartu hasil laporan siswa (lib/report_view.py). Font sengaja besar supaya
    mudah dibaca di HP. Tidak ada penanda ambang kelulusan di sini. */
 .mm-report {
-    margin-top: 1.75rem;
-    padding-top: 1.75rem;
-    border-top: 1px solid #e3e8ed;
     color: #1b2835;
+}
+.mm-report__top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #e3e8ed;
+}
+.mm-report__kelas {
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: #5b6b7b;
+}
+.mm-report__chip {
+    flex: none;
+    padding: 0.35rem 0.9rem;
+    border-radius: 999px;
+    background: #eef5fb;
+    color: #35506a;
+    font-size: 0.95rem;
+    font-weight: 600;
 }
 .mm-report__name {
     font-size: clamp(1.7rem, 5vw, 2.25rem);
@@ -270,7 +297,7 @@ _BRAND_CSS = """
 .mm-bar--blue { background: #0b77ba; }
 .mm-bar--green { background: #7cb518; }
 @media (max-width: 640px) {
-    .st-key-card { padding: 1.5rem 1.1rem 1.25rem; }
+    .st-key-card, .st-key-card_wide { padding: 1.5rem 1.1rem 1.25rem; }
 }
 
 .st-key-footer, .st-key-footer p {

@@ -73,12 +73,68 @@ def reset_lookup():
     st.session_state[KEY_KELAS] = None
 
 
-with st.container(key="hero"):
-    st.image("assets/logo_apiis.png", width=420)
-    st.caption(ORG_TAGLINE)
-    st.html(f'<h1 class="mm-title">{t("app_title")} <span>{t("app_title_accent")}</span></h1>')
+def render_report(report: dict):
+    """Halaman hasil: kartu lebar tanpa form (siswa menekan "Periksa Status Lain" untuk kembali)."""
+    semester = report["semester"]
+    data = normalize_fields(report["data"])
+    nama = data.get(FIELD_NAMA, "-")
+    kuis = parse_percentage(data.get(FIELD_KUIS))
+    kehadiran = parse_percentage(data.get(FIELD_KEHADIRAN))
+    catatan = data.get(FIELD_CATATAN)
 
-with st.container(key="card"):
+    complete = kuis is not None and kehadiran is not None
+    status = classify(kuis, kehadiran)
+
+    recorded = parse_count(data.get(FIELD_MINGGU_TERCATAT))
+    total = parse_count(data.get(FIELD_TOTAL_MINGGU))
+    weeks_text = (
+        t("report_weeks", recorded=recorded, total=total)
+        if complete and recorded is not None and total
+        else None
+    )
+
+    rank_info = report.get("rank")
+    rank = None
+    if isinstance(rank_info, dict):
+        position, total_students = parse_count(rank_info.get("position")), parse_count(rank_info.get("total"))
+        if position and total_students and position <= total_students:
+            rank = (position, total_students)
+
+    st.html(
+        build_report_html(
+            nama=str(nama or "-"),
+            email=str(data.get(FIELD_EMAIL) or report["typed_email"]),
+            kelas=report["kelas"],
+            semester=semester,
+            kuis=kuis,
+            kehadiran=kehadiran,
+            status=status,
+            weeks_text=weeks_text,
+            note=t("report_note"),
+            rank=rank,
+            labels={
+                "status_label": t("report_status_label"),
+                "status_pass": t("report_status_pass"),
+                "status_warn": t("report_status_warn"),
+                "status_fail": t("report_status_fail"),
+                "kuis": t("report_avg_kuis"),
+                "kehadiran": t("report_avg_kehadiran"),
+                "rank": t("report_rank"),
+            },
+        )
+    )
+    if not complete:
+        st.warning(t("incomplete_data_warning"))
+
+    if catatan:
+        st.subheader(t("catatan_subheader"), icon=":material/edit_note:")
+        st.write(catatan)
+
+    st.button(t("lookup_another_button"), icon=":material/restart_alt:", on_click=reset_lookup)
+
+
+def render_lookup_form():
+    """Halaman awal: kartu sempit berisi form Email + Kelas."""
     st.caption(t("intro_caption"))
 
     try:
@@ -95,25 +151,19 @@ with st.container(key="card"):
     with st.form("lookup_form", border=False):
         # Key tetap supaya isian form tidak hilang saat ganti bahasa (tanpa key,
         # label yang berubah dianggap widget baru dan isiannya ter-reset).
-        # Email | Kelas | tombol sebaris di layar lebar (otomatis menumpuk di HP).
-        col_email, col_kelas, col_button = st.columns([5, 3, 2], vertical_alignment="bottom")
-        with col_email:
-            email = st.text_input(t("email_label"), placeholder=t("email_placeholder"), key=KEY_EMAIL)
-        with col_kelas:
-            kelas = st.selectbox(
-                t("kelas_label"),
-                options=KELAS_OPTIONS,
-                index=None,
-                placeholder=t("kelas_placeholder"),
-                key=KEY_KELAS,
-            )
-        with col_button:
-            submitted = st.form_submit_button(
-                t("submit_button"), icon=":material/search:", type="primary", width="stretch"
-            )
+        email = st.text_input(t("email_label"), placeholder=t("email_placeholder"), key=KEY_EMAIL)
+        kelas = st.selectbox(
+            t("kelas_label"),
+            options=KELAS_OPTIONS,
+            index=None,
+            placeholder=t("kelas_placeholder"),
+            key=KEY_KELAS,
+        )
+        submitted = st.form_submit_button(
+            t("submit_button"), icon=":material/search:", type="primary", width="stretch"
+        )
 
     if submitted:
-        st.session_state.pop(KEY_REPORT, None)
         if not email.strip() or not kelas:
             st.warning(t("warning_incomplete"))
         else:
@@ -135,7 +185,7 @@ with st.container(key="card"):
             elif result is not None:
                 # Hasil disimpan di sesi (bukan hanya dirender sekali) supaya tetap
                 # tampil saat halaman dijalankan ulang, mis. ganti bahasa. Teksnya
-                # dibangun ulang dari data ini di bawah, jadi ikut berganti bahasa.
+                # dibangun ulang dari data ini, jadi ikut berganti bahasa.
                 st.session_state[KEY_REPORT] = {
                     "kelas": kelas,
                     "semester": result.get("semester", ""),
@@ -143,67 +193,23 @@ with st.container(key="card"):
                     "typed_email": email.strip(),
                     "rank": result.get("rank"),
                 }
+                st.rerun()  # ganti ke halaman hasil (kartu lebar, tanpa form)
 
-    report = st.session_state.get(KEY_REPORT)
-    if report:
-        semester = report["semester"]
-        data = normalize_fields(report["data"])
-        nama = data.get(FIELD_NAMA, "-")
-        kuis = parse_percentage(data.get(FIELD_KUIS))
-        kehadiran = parse_percentage(data.get(FIELD_KEHADIRAN))
-        catatan = data.get(FIELD_CATATAN)
+    st.caption(f":material/help: {t('help_not_found')}")
 
-        complete = kuis is not None and kehadiran is not None
-        status = classify(kuis, kehadiran)
 
-        recorded = parse_count(data.get(FIELD_MINGGU_TERCATAT))
-        total = parse_count(data.get(FIELD_TOTAL_MINGGU))
-        weeks_text = (
-            t("report_weeks", recorded=recorded, total=total)
-            if complete and recorded is not None and total
-            else None
-        )
+with st.container(key="hero"):
+    st.image("assets/logo_apiis.png", width=420)
+    st.caption(ORG_TAGLINE)
+    st.html(f'<h1 class="mm-title">{t("app_title")} <span>{t("app_title_accent")}</span></h1>')
 
-        rank_info = report.get("rank")
-        rank = None
-        if isinstance(rank_info, dict):
-            position, total_students = parse_count(rank_info.get("position")), parse_count(rank_info.get("total"))
-            if position and total_students and position <= total_students:
-                rank = (position, total_students)
-
-        st.html(
-            build_report_html(
-                nama=str(nama or "-"),
-                email=str(data.get(FIELD_EMAIL) or report["typed_email"]),
-                kelas=report["kelas"],
-                semester=semester,
-                kuis=kuis,
-                kehadiran=kehadiran,
-                status=status,
-                weeks_text=weeks_text,
-                note=t("report_note"),
-                rank=rank,
-                labels={
-                    "status_label": t("report_status_label"),
-                    "status_pass": t("report_status_pass"),
-                    "status_warn": t("report_status_warn"),
-                    "status_fail": t("report_status_fail"),
-                    "kuis": t("report_avg_kuis"),
-                    "kehadiran": t("report_avg_kehadiran"),
-                    "rank": t("report_rank"),
-                },
-            )
-        )
-        if not complete:
-            st.warning(t("incomplete_data_warning"))
-
-        if catatan:
-            st.subheader(t("catatan_subheader"), icon=":material/edit_note:")
-            st.write(catatan)
-
-        st.button(t("lookup_another_button"), icon=":material/restart_alt:", on_click=reset_lookup)
-    else:
-        st.caption(f":material/help: {t('help_not_found')}")
+current_report = st.session_state.get(KEY_REPORT)
+if current_report:
+    with st.container(key="card_wide"):
+        render_report(current_report)
+else:
+    with st.container(key="card"):
+        render_lookup_form()
 
 with st.container(key="footer"):
     st.caption(ORG_NAME)
